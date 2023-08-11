@@ -1,0 +1,41 @@
+---
+# Checks: '*
+#   clang-diagnostic-*,
+#   clang-analyzer-*,
+#   cppcoreguidelines-*,
+#   modernize-*,
+#   bugprone-*,
+#   misc-*,
+#   -readability-else-after-return,
+#   -readability-static-accessed-through-instance,
+#   -readability-avoid-const-params-in-decls,
+#   -modernize-use-trailing-return-type,
+#   -cppcoreguidelines-avoid-magic-numbers,
+#   -modernize-avoid-c-arrays,
+#   -cppcoreguidelines-pro-bounds-array-to-pointer-decay,
+#   -cppcoreguidelines-avoid-c-arrays,
+# '
+
+Checks: "*,
+  -abseil-*,
+  -altera-*,
+  -android-*,
+  -fuchsia-*,
+  -google-*,
+  -llvm*,
+  -zircon-*,
+  -modernize-use-trailing-return-type,
+  -readability-else-after-return,
+  -readability-static-accessed-through-instance,
+  -readability-avoid-const-params-in-decls,
+  -readability-braces-around-statements,
+  -readability-uppercase-literal-suffix,
+  -hicpp-uppercase-literal-suffix,
+  -hicpp-braces-around-statements,
+  -cppcoreguidelines-non-private-member-variables-in-classes,
+  -misc-non-private-member-variables-in-classes,
+"
+
+WarningsAsErrors: ''
+HeaderFilterRegex: ''
+FormatStyle: none
