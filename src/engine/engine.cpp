@@ -104,6 +104,9 @@ void Engine::Cleanup()
 
 	for (uint64_t i = 0; i < Config::maxFramesInFlight; ++i)
 	{
+		vkFreeMemory(m_Device->GetDevice(), m_DynamicUniformBufferMemory[i], nullptr);
+		vkDestroyBuffer(m_Device->GetDevice(), m_DynamicUniformBuffers[i], nullptr);
+
 		vkFreeMemory(m_Device->GetDevice(), m_UniformBufferMemory[i], nullptr);
 		vkDestroyBuffer(m_Device->GetDevice(), m_UniformBuffers[i], nullptr);
 	}
@@ -134,17 +137,19 @@ void Engine::Draw()
 	BeginScene();
 
 	vkCmdBindPipeline(m_ActiveCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline);
+
+	uint32_t dynamicOffset = 0;
 	vkCmdBindDescriptorSets(m_ActiveCommandBuffer,
 		VK_PIPELINE_BIND_POINT_GRAPHICS,
 		m_PipelineLayout,
 		0,
 		1,
 		&m_DescriptorSets[m_CurrentFrameIndex],
-		0,
-		nullptr);
+		1,
+		&dynamicOffset);
 
-	const VkDeviceSize offsets[]{ 0 };
-	vkCmdBindVertexBuffers(m_ActiveCommandBuffer, 0, 1, &m_VertexBuffer, offsets);
+	VkDeviceSize offset = 0;
+	vkCmdBindVertexBuffers(m_ActiveCommandBuffer, 0, 1, &m_VertexBuffer, &offset);
 	vkCmdBindIndexBuffer(m_ActiveCommandBuffer, m_IndexBuffer, 0, VK_INDEX_TYPE_UINT32);
 	vkCmdDrawIndexed(m_ActiveCommandBuffer, static_cast<uint32_t>(m_Indices.size()), 1, 0, 0, 0);
 
@@ -167,6 +172,20 @@ void Engine::UpdateUniformBuffers()
 	vkMapMemory(m_Device->GetDevice(), m_UniformBufferMemory[m_CurrentFrameIndex], 0, sizeof(ubo), 0, &data);
 	memcpy(data, &ubo, sizeof(ubo));
 	vkUnmapMemory(m_Device->GetDevice(), m_UniformBufferMemory[m_CurrentFrameIndex]);
+
+	// for dynamic buffer
+	glm::mat4 view = glm::lookAt(glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+	glm::mat4 proj = glm::perspective(glm::radians(90.0f), m_AspectRatio, 0.01f, 100.0f);
+	proj[1][1] *= -1; // flip the y-coord
+	glm::mat4 viewProj = proj * view;
+
+	// TODO: create a new ubo for view and proj mat to be used in vertex shader
+	DynamicUBO dUbo{};
+	dUbo.model = glm::translate(viewProj, glm::vec3(0.0f, 0.0f, 0.0f));
+
+	vkMapMemory(m_Device->GetDevice(), m_DynamicUniformBufferMemory[m_CurrentFrameIndex], 0, sizeof(dUbo), 0, &data);
+	memcpy(data, &dUbo, sizeof(dUbo));
+	vkUnmapMemory(m_Device->GetDevice(), m_DynamicUniformBufferMemory[m_CurrentFrameIndex]);
 }
 
 void Engine::BeginScene()
@@ -377,6 +396,8 @@ void Engine::CreateSwapchain()
 
 	m_SwapchainImageFormat = surfaceFormat.format;
 	m_SwapchainExtent = extent;
+
+	m_AspectRatio = static_cast<float>(m_SwapchainExtent.width) / static_cast<float>(m_SwapchainExtent.height);
 }
 
 void Engine::CreateSwapchainImageViews()
@@ -534,9 +555,13 @@ void Engine::CreateFramebuffers()
 
 void Engine::CreateUniformBuffers()
 {
-	VkDeviceSize bufferSize = sizeof(UniformBufferObject);
+	const VkDeviceSize bufferSize = sizeof(UniformBufferObject);
 	m_UniformBuffers.resize(Config::maxFramesInFlight);
 	m_UniformBufferMemory.resize(Config::maxFramesInFlight);
+
+	const VkDeviceSize dBufferSize = DynamicUBO::GetSize();
+	m_DynamicUniformBuffers.resize(Config::maxFramesInFlight);
+	m_DynamicUniformBufferMemory.resize(Config::maxFramesInFlight);
 
 	for (uint64_t i = 0; i < Config::maxFramesInFlight; ++i)
 	{
@@ -546,6 +571,13 @@ void Engine::CreateUniformBuffers()
 			VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
 			m_UniformBuffers[i],
 			m_UniformBufferMemory[i]);
+
+		utils::CreateBuffer(m_Device,
+			dBufferSize,
+			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+			VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
+			m_DynamicUniformBuffers[i],
+			m_DynamicUniformBufferMemory[i]);
 	}
 }
 
@@ -558,10 +590,20 @@ void Engine::CreateDescriptorSetLayout()
 	layoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 	layoutBinding.pImmutableSamplers = nullptr;
 
+	// for dynamic uniform buffer
+	VkDescriptorSetLayoutBinding dLayoutBinding{};
+	dLayoutBinding.binding = 1;
+	dLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
+	dLayoutBinding.descriptorCount = 1;
+	dLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+	dLayoutBinding.pImmutableSamplers = nullptr;
+
+	std::array<VkDescriptorSetLayoutBinding, 2> layouts{ layoutBinding, dLayoutBinding };
+
 	VkDescriptorSetLayoutCreateInfo descriptorSetLayoutInfo{};
 	descriptorSetLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-	descriptorSetLayoutInfo.bindingCount = 1;
-	descriptorSetLayoutInfo.pBindings = &layoutBinding;
+	descriptorSetLayoutInfo.bindingCount = static_cast<uint32_t>(layouts.size());
+	descriptorSetLayoutInfo.pBindings = layouts.data();
 
 	ErrCheck(
 		vkCreateDescriptorSetLayout(m_Device->GetDevice(), &descriptorSetLayoutInfo, nullptr, &m_DescriptorSetLayout)
@@ -587,9 +629,17 @@ void Engine::CreateDescriptorSets()
 	{
 		VkDescriptorBufferInfo bufferInfo =
 			inits::DescriptorBufferInfo(m_UniformBuffers[i], 0, sizeof(UniformBufferObject));
-		VkWriteDescriptorSet descWrites = inits::WriteDescriptorSet(
+		VkDescriptorBufferInfo dBufferInfo =
+			inits::DescriptorBufferInfo(m_DynamicUniformBuffers[i], 0, DynamicUBO::GetSize());
+
+		std::array<VkWriteDescriptorSet, 2> descWrites{};
+		descWrites[0] = inits::WriteDescriptorSet(
 			m_DescriptorSets[i], 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, &bufferInfo, nullptr);
-		vkUpdateDescriptorSets(m_Device->GetDevice(), 1, &descWrites, 0, nullptr);
+		descWrites[1] = inits::WriteDescriptorSet(
+			m_DescriptorSets[i], 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 1, &dBufferInfo, nullptr);
+
+		vkUpdateDescriptorSets(
+			m_Device->GetDevice(), static_cast<uint32_t>(descWrites.size()), descWrites.data(), 0, nullptr);
 	}
 }
 
@@ -626,7 +676,7 @@ void Engine::CreatePipeline(const char* vertShaderPath, const char* fragShaderPa
 		inits::PipelineInputAssemblyStateCreateInfo(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
 	const VkPipelineViewportStateCreateInfo viewportStateInfo = inits::PipelineViewportStateCreateInfo(1, 1);
 	const VkPipelineRasterizationStateCreateInfo rasterizationStateInfo =
-		inits::PipelineRasterizationStateCreateInfo(VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_CLOCKWISE);
+		inits::PipelineRasterizationStateCreateInfo(VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE);
 	const VkPipelineMultisampleStateCreateInfo multisampleStateInfo =
 		inits::PipelineMultisampleStateCreateInfo(VK_TRUE, m_Device->GetMsaaSamples(), 0.2f);
 	const VkPipelineDepthStencilStateCreateInfo depthStencilStateInfo =
@@ -802,6 +852,7 @@ void Engine::OnCloseEvent()
 void Engine::OnResizeEvent(int width, int height)
 {
 	RecreateSwapchain();
+	m_AspectRatio = static_cast<float>(m_SwapchainExtent.width) / static_cast<float>(m_SwapchainExtent.height);
 }
 
 void Engine::OnMouseMoveEvent(double xpos, double ypos)

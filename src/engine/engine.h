@@ -101,6 +101,8 @@ private:
 	std::vector<VkDescriptorSet> m_DescriptorSets;
 	std::vector<VkBuffer> m_UniformBuffers;
 	std::vector<VkDeviceMemory> m_UniformBufferMemory;
+	std::vector<VkBuffer> m_DynamicUniformBuffers;
+	std::vector<VkDeviceMemory> m_DynamicUniformBufferMemory;
 
 	VkPipeline m_Pipeline{};
 
@@ -124,6 +126,7 @@ private:
 	uint32_t m_CurrentFrameIndex = 0;
 	uint32_t m_NextFrameIndex = 0; // acquired from swapchain
 	bool m_FramebufferResized = false;
+	float m_AspectRatio = 0.0f;
 
 	uint32_t m_LastFps = 0;
 	uint32_t m_FrameCounter = 0;

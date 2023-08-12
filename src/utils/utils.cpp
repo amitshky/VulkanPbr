@@ -544,12 +544,12 @@ void EndSingleTimeCommands(VkCommandBuffer cmdBuff, VkDevice deviceVk, VkCommand
 std::pair<std::vector<Vertex>, std::vector<uint32_t>> GenerateMeshData()
 {
 	std::vector<Vertex> vertices{
-		{{ -0.5f, 0.5f, 0.5f },   { 0.0f, 0.0f, 1.0f }, { 0.0f, 0.0f }}, // 0
-		{ { -0.5f, -0.5f, 0.5f }, { 0.0f, 0.0f, 1.0f }, { 0.0f, 1.0f }}, // 1
-		{ { 0.5f, -0.5f, 0.5f },  { 0.0f, 0.0f, 1.0f }, { 1.0f, 1.0f }}, // 2
-		{ { 0.5f, -0.5f, 0.5f },  { 0.0f, 0.0f, 1.0f }, { 1.0f, 1.0f }}, // 2
-		{ { 0.5f, 0.5f, 0.5f },   { 0.0f, 0.0f, 1.0f }, { 1.0f, 0.0f }}, // 3
-		{ { -0.5f, 0.5f, 0.5f },  { 0.0f, 0.0f, 1.0f }, { 0.0f, 0.0f }}, // 0
+		{{ -0.5f, 0.5f, 0.0f },   { 0.0f, 0.0f, 1.0f }, { 0.0f, 0.0f }}, // 0
+		{ { -0.5f, -0.5f, 0.0f }, { 0.0f, 0.0f, 1.0f }, { 0.0f, 1.0f }}, // 1
+		{ { 0.5f, -0.5f, 0.0f },  { 0.0f, 0.0f, 1.0f }, { 1.0f, 1.0f }}, // 2
+		{ { 0.5f, -0.5f, 0.0f },  { 0.0f, 0.0f, 1.0f }, { 1.0f, 1.0f }}, // 2
+		{ { 0.5f, 0.5f, 0.0f },   { 0.0f, 0.0f, 1.0f }, { 1.0f, 0.0f }}, // 3
+		{ { -0.5f, 0.5f, 0.0f },  { 0.0f, 0.0f, 1.0f }, { 0.0f, 0.0f }}, // 0
 	};
 
 	// generate indices from unique vertices
