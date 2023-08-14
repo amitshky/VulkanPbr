@@ -114,7 +114,9 @@ struct UniformBufferObject
 struct DynamicUBO
 {
 	alignas(16) glm::mat4 model;
+	alignas(16) glm::mat4 viewProj;
+	alignas(16) glm::mat4 normalMat;
 
 	// NOTE: if this struct is updated don't forget to update this function as well
-	[[nodiscard]] static inline uint64_t GetSize() { return sizeof(glm::mat4); }
+	[[nodiscard]] static inline uint64_t GetSize() { return sizeof(glm::mat4) * 3ull; }
 };

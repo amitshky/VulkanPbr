@@ -1,12 +1,12 @@
 #include "engine/engine.h"
 
+#include "glm/gtc/matrix_inverse.hpp"
 #include "core/core.h"
 #include "core/input.h"
 #include "engine/initializers.h"
 #include "engine/shader.h"
 #include "ui/imGuiOverlay.h"
 #include "utils/utils.h"
-#include <set>
 
 Engine* Engine::s_Instance = nullptr;
 
@@ -69,6 +69,8 @@ void Engine::Init(const char* title, const uint64_t width, const uint64_t height
 	CreateIndexBuffer();
 	CreateSyncObjects();
 
+	m_Camera = std::make_unique<Camera>(m_AspectRatio);
+
 	ImGuiOverlay::Init(m_VulkanContext->GetInstance(),
 		m_Device->GetPhysicalDevice(),
 		m_Device->GetDevice(),
@@ -126,13 +128,13 @@ void Engine::Run()
 	while (m_IsRunning)
 	{
 		const float deltatime = CalcFps();
-		Draw();
+		Draw(deltatime);
 		ProcessInput();
 		m_Window->OnUpdate();
 	}
 }
 
-void Engine::Draw()
+void Engine::Draw(float deltatime)
 {
 	BeginScene();
 
@@ -157,15 +159,17 @@ void Engine::Draw()
 
 	OnUiRender();
 	EndScene();
+
+	m_Camera->OnUpdate(deltatime);
 }
 
 void Engine::UpdateUniformBuffers()
 {
 	UniformBufferObject ubo{};
-	ubo.cameraPos = glm::vec3(0.5f, 0.5f, 0.5f);
-	ubo.albedo = glm::vec3(0.5f, 0.5f, 0.0f);
-	ubo.metallic = 0.2f;
-	ubo.roughness = 0.5f;
+	ubo.cameraPos = m_Camera->GetCameraPosition();
+	ubo.albedo = glm::vec3(0.5f, 0.5f, 0.1f);
+	ubo.metallic = 0.9f;
+	ubo.roughness = 0.1f;
 	ubo.ao = 0.8f;
 
 	void* data = nullptr;
@@ -173,15 +177,12 @@ void Engine::UpdateUniformBuffers()
 	memcpy(data, &ubo, sizeof(ubo));
 	vkUnmapMemory(m_Device->GetDevice(), m_UniformBufferMemory[m_CurrentFrameIndex]);
 
-	// for dynamic buffer
-	glm::mat4 view = glm::lookAt(glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-	glm::mat4 proj = glm::perspective(glm::radians(90.0f), m_AspectRatio, 0.01f, 100.0f);
-	proj[1][1] *= -1; // flip the y-coord
-	glm::mat4 viewProj = proj * view;
-
 	// TODO: create a new ubo for view and proj mat to be used in vertex shader
 	DynamicUBO dUbo{};
-	dUbo.model = glm::translate(viewProj, glm::vec3(0.0f, 0.0f, 0.0f));
+	dUbo.model = glm::mat4(1.0);
+	dUbo.model = glm::translate(dUbo.model, glm::vec3(0.0f, 0.0f, 0.0f));
+	dUbo.viewProj = m_Camera->GetViewProjectionMatrix();
+	dUbo.normalMat = glm::inverseTranspose(dUbo.model);
 
 	vkMapMemory(m_Device->GetDevice(), m_DynamicUniformBufferMemory[m_CurrentFrameIndex], 0, sizeof(dUbo), 0, &data);
 	memcpy(data, &dUbo, sizeof(dUbo));
@@ -676,7 +677,7 @@ void Engine::CreatePipeline(const char* vertShaderPath, const char* fragShaderPa
 		inits::PipelineInputAssemblyStateCreateInfo(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
 	const VkPipelineViewportStateCreateInfo viewportStateInfo = inits::PipelineViewportStateCreateInfo(1, 1);
 	const VkPipelineRasterizationStateCreateInfo rasterizationStateInfo =
-		inits::PipelineRasterizationStateCreateInfo(VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE);
+		inits::PipelineRasterizationStateCreateInfo(VK_CULL_MODE_NONE, VK_FRONT_FACE_COUNTER_CLOCKWISE);
 	const VkPipelineMultisampleStateCreateInfo multisampleStateInfo =
 		inits::PipelineMultisampleStateCreateInfo(VK_TRUE, m_Device->GetMsaaSamples(), 0.2f);
 	const VkPipelineDepthStencilStateCreateInfo depthStencilStateInfo =
@@ -832,16 +833,16 @@ void Engine::ProcessInput()
 	if (io.WantCaptureMouse || io.WantCaptureKeyboard)
 		return;
 
-	// if (Input::IsMouseButtonPressed(Mouse::BUTTON_1))
-	// {
-	// 	// hide cursor when moving camera
-	// 	m_Window->HideCursor();
-	// }
-	// else if (Input::IsMouseButtonReleased(Mouse::BUTTON_1))
-	// {
-	// 	// unhide cursor when camera stops moving
-	// 	m_Window->ShowCursor();
-	// }
+	if (Input::IsMouseButtonPressed(Mouse::BUTTON_1))
+	{
+		// hide cursor when moving camera
+		m_Window->HideCursor();
+	}
+	else if (Input::IsMouseButtonReleased(Mouse::BUTTON_1))
+	{
+		// unhide cursor when camera stops moving
+		m_Window->ShowCursor();
+	}
 }
 
 void Engine::OnCloseEvent()
@@ -852,7 +853,7 @@ void Engine::OnCloseEvent()
 void Engine::OnResizeEvent(int width, int height)
 {
 	RecreateSwapchain();
-	m_AspectRatio = static_cast<float>(m_SwapchainExtent.width) / static_cast<float>(m_SwapchainExtent.height);
+	m_Camera->SetAspectRatio(m_AspectRatio);
 }
 
 void Engine::OnMouseMoveEvent(double xpos, double ypos)
@@ -860,6 +861,8 @@ void Engine::OnMouseMoveEvent(double xpos, double ypos)
 	ImGuiIO& io = ImGui::GetIO();
 	if (io.WantCaptureMouse)
 		return;
+
+	m_Camera->OnMouseMove(xpos, ypos);
 }
 
 void Engine::OnKeyEvent(int key, int scancode, int action, int mods)

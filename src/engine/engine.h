@@ -8,6 +8,7 @@
 #include "engine/types.h"
 #include "engine/vulkanContext.h"
 #include "engine/device.h"
+#include "engine/camera.h"
 
 class Engine
 {
@@ -29,7 +30,7 @@ private:
 
 	void Init(const char* title, const uint64_t width, const uint64_t height);
 	void Cleanup();
-	void Draw();
+	void Draw(float deltatime);
 	void BeginScene();
 	void EndScene();
 	void OnUiRender();
@@ -121,6 +122,8 @@ private:
 	// signaled when command buffers have finished execution
 	std::vector<VkSemaphore> m_RenderFinishedSemaphores;
 	std::vector<VkFence> m_InFlightFences;
+
+	std::unique_ptr<Camera> m_Camera;
 
 	VkCommandBuffer m_ActiveCommandBuffer{};
 	uint32_t m_CurrentFrameIndex = 0;
