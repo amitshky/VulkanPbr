@@ -61,6 +61,11 @@ private:
 	void CreateCommandBuffers();
 	void CreateVertexBuffer();
 	void CreateIndexBuffer();
+
+	void CreateTextureImage(const char* texturePath);
+	void CreateTextureImageView();
+	void CreateTextureSampler();
+
 	void CreateSyncObjects();
 
 	// event callbacks
@@ -100,10 +105,16 @@ private:
 	VkDescriptorSetLayout m_DescriptorSetLayout{};
 	VkPipelineLayout m_PipelineLayout{};
 	std::vector<VkDescriptorSet> m_DescriptorSets;
+
 	std::vector<VkBuffer> m_UniformBuffers;
 	std::vector<VkDeviceMemory> m_UniformBufferMemory;
 	std::vector<VkBuffer> m_DynamicUniformBuffers;
 	std::vector<VkDeviceMemory> m_DynamicUniformBufferMemory;
+
+	VkImage m_TextureImage;
+	VkDeviceMemory m_TextureImageMem;
+	VkImageView m_TextureImageView;
+	VkSampler m_TextureImageSampler;
 
 	VkPipeline m_Pipeline{};
 

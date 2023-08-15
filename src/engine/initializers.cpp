@@ -163,6 +163,16 @@ VkDescriptorBufferInfo DescriptorBufferInfo(VkBuffer buffer, VkDeviceSize offset
 	return info;
 }
 
+VkDescriptorImageInfo DescriptorImageInfo(VkSampler sampler, VkImageView imageView)
+{
+	VkDescriptorImageInfo info{};
+	info.sampler = sampler;
+	info.imageView = imageView;
+	info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+	return info;
+}
+
 VkWriteDescriptorSet WriteDescriptorSet(VkDescriptorSet dstSet,
 	uint32_t dstBinding,
 	VkDescriptorType descriptorType,

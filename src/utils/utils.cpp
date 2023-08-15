@@ -272,14 +272,13 @@ void CreateBuffer(const std::unique_ptr<Device>& device,
 	vkBindBufferMemory(device->GetDevice(), buffer, bufferMemory, 0);
 }
 
-void CopyBuffer(VkDevice deviceVk,
+void CopyBuffer(const std::unique_ptr<Device>& device,
 	VkCommandPool commandPool,
-	VkQueue graphicsQueue,
 	VkBuffer srcBuffer,
 	VkBuffer dstBuffer,
 	VkDeviceSize size)
 {
-	VkCommandBuffer cmdBuff = BeginSingleTimeCommands(deviceVk, commandPool);
+	VkCommandBuffer cmdBuff = BeginSingleTimeCommands(device->GetDevice(), commandPool);
 
 	VkBufferCopy copyRegion{};
 	copyRegion.srcOffset = 0;
@@ -288,18 +287,17 @@ void CopyBuffer(VkDevice deviceVk,
 	// transfer the contents of the buffers
 	vkCmdCopyBuffer(cmdBuff, srcBuffer, dstBuffer, 1, &copyRegion);
 
-	EndSingleTimeCommands(cmdBuff, deviceVk, commandPool, graphicsQueue);
+	EndSingleTimeCommands(cmdBuff, device->GetDevice(), commandPool, device->GetGraphicsQueue());
 }
 
-void CopyBufferToImage(VkDevice deviceVk,
+void CopyBufferToImage(const std::unique_ptr<Device>& device,
 	VkCommandPool commandPool,
-	VkQueue graphicsQueue,
 	VkBuffer buffer,
 	VkImage image,
 	uint32_t width,
 	uint32_t height)
 {
-	VkCommandBuffer cmdBuff = BeginSingleTimeCommands(deviceVk, commandPool);
+	VkCommandBuffer cmdBuff = BeginSingleTimeCommands(device->GetDevice(), commandPool);
 
 	// specify which part of the buffer is going to be copied to which part of the image
 	VkBufferImageCopy region{};
@@ -316,13 +314,11 @@ void CopyBufferToImage(VkDevice deviceVk,
 
 	vkCmdCopyBufferToImage(cmdBuff, buffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
 
-	EndSingleTimeCommands(cmdBuff, deviceVk, commandPool, graphicsQueue);
+	EndSingleTimeCommands(cmdBuff, device->GetDevice(), commandPool, device->GetGraphicsQueue());
 }
 
-void GenerateMipmaps(VkDevice deviceVk,
-	VkPhysicalDevice physicalDevice,
+void GenerateMipmaps(const std::unique_ptr<Device>& device,
 	VkCommandPool commandPool,
-	VkQueue graphicsQueue,
 	VkImage image,
 	VkFormat format,
 	int32_t width,
@@ -330,12 +326,12 @@ void GenerateMipmaps(VkDevice deviceVk,
 	uint32_t mipLevels)
 {
 	VkFormatProperties formatProperties;
-	vkGetPhysicalDeviceFormatProperties(physicalDevice, format, &formatProperties);
+	vkGetPhysicalDeviceFormatProperties(device->GetPhysicalDevice(), format, &formatProperties);
 	// check image format's support for linear filter
 	ErrCheck(!(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT),
 		"Texture image format does not support linear blitting!");
 
-	VkCommandBuffer cmdBuff = BeginSingleTimeCommands(deviceVk, commandPool);
+	VkCommandBuffer cmdBuff = BeginSingleTimeCommands(device->GetDevice(), commandPool);
 
 	VkImageMemoryBarrier imgBarrier{};
 	imgBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
@@ -446,19 +442,17 @@ void GenerateMipmaps(VkDevice deviceVk,
 		1,
 		&imgBarrier);
 
-	EndSingleTimeCommands(cmdBuff, deviceVk, commandPool, graphicsQueue);
+	EndSingleTimeCommands(cmdBuff, device->GetDevice(), commandPool, device->GetGraphicsQueue());
 }
 
-void TransitionImageLayout(VkDevice deviceVk,
+void TransitionImageLayout(const std::unique_ptr<Device>& device,
 	VkCommandPool commandPool,
-	VkQueue graphicsQueue,
 	VkImage image,
-	VkFormat format,
 	VkImageLayout oldLayout,
 	VkImageLayout newLayout,
 	uint32_t miplevels)
 {
-	VkCommandBuffer cmdBuff = BeginSingleTimeCommands(deviceVk, commandPool);
+	VkCommandBuffer cmdBuff = BeginSingleTimeCommands(device->GetDevice(), commandPool);
 
 	VkPipelineStageFlags srcStage{};
 	VkPipelineStageFlags dstStage{};
@@ -498,7 +492,7 @@ void TransitionImageLayout(VkDevice deviceVk,
 
 	vkCmdPipelineBarrier(cmdBuff, srcStage, dstStage, 0, 0, nullptr, 0, nullptr, 1, &barrier);
 
-	EndSingleTimeCommands(cmdBuff, deviceVk, commandPool, graphicsQueue);
+	EndSingleTimeCommands(cmdBuff, device->GetDevice(), commandPool, device->GetGraphicsQueue());
 }
 
 

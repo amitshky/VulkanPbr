@@ -65,36 +65,30 @@ void CreateBuffer(const std::unique_ptr<Device>& device,
 	VkBuffer& buffer,
 	VkDeviceMemory& bufferMemory);
 
-void CopyBuffer(VkDevice deviceVk,
+void CopyBuffer(const std::unique_ptr<Device>& device,
 	VkCommandPool commandPool,
-	VkQueue graphicsQueue,
 	VkBuffer srcBuffer,
 	VkBuffer dstBuffer,
 	VkDeviceSize size);
 
-void CopyBufferToImage(VkDevice deviceVk,
+void CopyBufferToImage(const std::unique_ptr<Device>& device,
 	VkCommandPool commandPool,
-	VkQueue graphicsQueue,
 	VkBuffer buffer,
 	VkImage image,
 	uint32_t width,
 	uint32_t height);
 
-void GenerateMipmaps(VkDevice deviceVk,
-	VkPhysicalDevice physicalDevice,
+void GenerateMipmaps(const std::unique_ptr<Device>& device,
 	VkCommandPool commandPool,
-	VkQueue graphicsQueue,
 	VkImage image,
 	VkFormat format,
 	int32_t width,
 	int32_t height,
 	uint32_t mipLevels);
 
-void TransitionImageLayout(VkDevice deviceVk,
+void TransitionImageLayout(const std::unique_ptr<Device>& device,
 	VkCommandPool commandPool,
-	VkQueue graphicsQueue,
 	VkImage image,
-	VkFormat format,
 	VkImageLayout oldLayout,
 	VkImageLayout newLayout,
 	uint32_t miplevels);

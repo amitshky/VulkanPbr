@@ -1,5 +1,6 @@
 #include "engine/engine.h"
 
+#include "stb_image/stb_image.h"
 #include "glm/gtc/matrix_inverse.hpp"
 #include "glm/gtc/type_ptr.hpp"
 #include "core/core.h"
@@ -59,15 +60,20 @@ void Engine::Init(const char* title, const uint64_t width, const uint64_t height
 	CreateDepthResource();
 	CreateFramebuffers();
 
+	CreateCommandBuffers();
 	CreateUniformBuffers();
+	CreateVertexBuffer();
+	CreateIndexBuffer();
+
+	CreateTextureImage("assets/textures/bricks/Bricks01_COL_VAR1_3K.jpg");
+	CreateTextureImageView();
+	CreateTextureSampler();
+
 	CreateDescriptorSetLayout();
 	CreateDescriptorSets();
 	CreatePipelineLayout();
 
 	CreatePipeline("assets/shaders/shader.vert.spv", "assets/shaders/shader.frag.spv");
-	CreateCommandBuffers();
-	CreateVertexBuffer();
-	CreateIndexBuffer();
 	CreateSyncObjects();
 
 	m_Camera = std::make_unique<Camera>(m_AspectRatio);
@@ -95,6 +101,11 @@ void Engine::Cleanup()
 		vkDestroySemaphore(m_Device->GetDevice(), m_RenderFinishedSemaphores[i], nullptr);
 		vkDestroyFence(m_Device->GetDevice(), m_InFlightFences[i], nullptr);
 	}
+
+	vkDestroySampler(m_Device->GetDevice(), m_TextureImageSampler, nullptr);
+	vkDestroyImageView(m_Device->GetDevice(), m_TextureImageView, nullptr);
+	vkFreeMemory(m_Device->GetDevice(), m_TextureImageMem, nullptr);
+	vkDestroyImage(m_Device->GetDevice(), m_TextureImage, nullptr);
 
 	vkFreeMemory(m_Device->GetDevice(), m_IndexBufferMemory, nullptr);
 	vkDestroyBuffer(m_Device->GetDevice(), m_IndexBuffer, nullptr);
@@ -178,7 +189,6 @@ void Engine::UpdateUniformBuffers()
 	memcpy(data, &ubo, sizeof(ubo));
 	vkUnmapMemory(m_Device->GetDevice(), m_UniformBufferMemory[m_CurrentFrameIndex]);
 
-	// TODO: create a new ubo for view and proj mat to be used in vertex shader
 	DynamicUBO dUbo{};
 	dUbo.model = glm::mat4(1.0);
 	dUbo.model = glm::translate(dUbo.model, glm::vec3(0.0f, 0.0f, 0.0f));
@@ -591,12 +601,15 @@ void Engine::CreateUniformBuffers()
 
 void Engine::CreateDescriptorSetLayout()
 {
+	std::vector<VkDescriptorSetLayoutBinding> layouts;
+
 	VkDescriptorSetLayoutBinding layoutBinding{};
 	layoutBinding.binding = 0;
 	layoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 	layoutBinding.descriptorCount = 1;
 	layoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 	layoutBinding.pImmutableSamplers = nullptr;
+	layouts.push_back(layoutBinding);
 
 	// for dynamic uniform buffer
 	VkDescriptorSetLayoutBinding dLayoutBinding{};
@@ -605,8 +618,16 @@ void Engine::CreateDescriptorSetLayout()
 	dLayoutBinding.descriptorCount = 1;
 	dLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 	dLayoutBinding.pImmutableSamplers = nullptr;
+	layouts.push_back(dLayoutBinding);
 
-	std::array<VkDescriptorSetLayoutBinding, 2> layouts{ layoutBinding, dLayoutBinding };
+	// for textures
+	VkDescriptorSetLayoutBinding textureLayoutBinding{};
+	textureLayoutBinding.binding = 2;
+	textureLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	textureLayoutBinding.descriptorCount = 1;
+	textureLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+	textureLayoutBinding.pImmutableSamplers = nullptr;
+	layouts.push_back(textureLayoutBinding);
 
 	VkDescriptorSetLayoutCreateInfo descriptorSetLayoutInfo{};
 	descriptorSetLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
@@ -639,12 +660,15 @@ void Engine::CreateDescriptorSets()
 			inits::DescriptorBufferInfo(m_UniformBuffers[i], 0, sizeof(UniformBufferObject));
 		VkDescriptorBufferInfo dBufferInfo =
 			inits::DescriptorBufferInfo(m_DynamicUniformBuffers[i], 0, DynamicUBO::GetSize());
+		VkDescriptorImageInfo textureImageInfo = inits::DescriptorImageInfo(m_TextureImageSampler, m_TextureImageView);
 
-		std::array<VkWriteDescriptorSet, 2> descWrites{};
-		descWrites[0] = inits::WriteDescriptorSet(
-			m_DescriptorSets[i], 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, &bufferInfo, nullptr);
-		descWrites[1] = inits::WriteDescriptorSet(
-			m_DescriptorSets[i], 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 1, &dBufferInfo, nullptr);
+		std::vector<VkWriteDescriptorSet> descWrites;
+		descWrites.push_back(inits::WriteDescriptorSet(
+			m_DescriptorSets[i], 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, &bufferInfo, nullptr));
+		descWrites.push_back(inits::WriteDescriptorSet(
+			m_DescriptorSets[i], 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 1, &dBufferInfo, nullptr));
+		descWrites.push_back(inits::WriteDescriptorSet(
+			m_DescriptorSets[i], 2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, nullptr, &textureImageInfo));
 
 		vkUpdateDescriptorSets(
 			m_Device->GetDevice(), static_cast<uint32_t>(descWrites.size()), descWrites.data(), 0, nullptr);
@@ -767,8 +791,7 @@ void Engine::CreateVertexBuffer()
 		m_VertexBuffer,
 		m_VertexBufferMemory);
 
-	utils::CopyBuffer(
-		m_Device->GetDevice(), m_CommandPool, m_Device->GetGraphicsQueue(), stagingBuffer, m_VertexBuffer, size);
+	utils::CopyBuffer(m_Device, m_CommandPool, stagingBuffer, m_VertexBuffer, size);
 
 	vkFreeMemory(m_Device->GetDevice(), stagingBufferMemory, nullptr);
 	vkDestroyBuffer(m_Device->GetDevice(), stagingBuffer, nullptr);
@@ -799,11 +822,105 @@ void Engine::CreateIndexBuffer()
 		m_IndexBuffer,
 		m_IndexBufferMemory);
 
-	utils::CopyBuffer(
-		m_Device->GetDevice(), m_CommandPool, m_Device->GetGraphicsQueue(), stagingBuffer, m_IndexBuffer, size);
+	utils::CopyBuffer(m_Device, m_CommandPool, stagingBuffer, m_IndexBuffer, size);
 
 	vkFreeMemory(m_Device->GetDevice(), stagingBufferMemory, nullptr);
 	vkDestroyBuffer(m_Device->GetDevice(), stagingBuffer, nullptr);
+}
+
+void Engine::CreateTextureImage(const char* texturePath)
+{
+	int width = 0;
+	int height = 0;
+	int channels = 0;
+	auto* imageData = stbi_load(texturePath, &width, &height, &channels, STBI_rgb_alpha);
+	ErrCheck(!imageData, "Unable to load texture: \"{}\"", texturePath);
+
+	VkDeviceSize size = width * height * 4;
+	const uint32_t miplevels = 1;
+
+	VkBuffer stagingBuffer = nullptr;
+	VkDeviceMemory stagingBufferMem = nullptr;
+	utils::CreateBuffer(m_Device,
+		size,
+		VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+		stagingBuffer,
+		stagingBufferMem);
+
+	void* data = nullptr;
+	vkMapMemory(m_Device->GetDevice(), stagingBufferMem, 0, size, 0, &data);
+	memcpy(data, imageData, size);
+	vkUnmapMemory(m_Device->GetDevice(), stagingBufferMem);
+
+	stbi_image_free(imageData);
+
+	// TODO: generate mipmaps
+	utils::CreateImage(m_Device,
+		width,
+		height,
+		miplevels,
+		VK_SAMPLE_COUNT_1_BIT,
+		VK_FORMAT_R8G8B8A8_SRGB,
+		VK_IMAGE_TILING_OPTIMAL,
+		VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+		m_TextureImage,
+		m_TextureImageMem);
+
+	utils::TransitionImageLayout(m_Device,
+		m_CommandPool,
+		m_TextureImage,
+		VK_IMAGE_LAYOUT_UNDEFINED,
+		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+		miplevels);
+
+	utils::CopyBufferToImage(m_Device, m_CommandPool, stagingBuffer, m_TextureImage, width, height);
+
+	utils::TransitionImageLayout(m_Device,
+		m_CommandPool,
+		m_TextureImage,
+		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+		VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+		miplevels);
+
+	vkFreeMemory(m_Device->GetDevice(), stagingBufferMem, nullptr);
+	vkDestroyBuffer(m_Device->GetDevice(), stagingBuffer, nullptr);
+}
+
+void Engine::CreateTextureImageView()
+{
+	m_TextureImageView = utils::CreateImageView(m_Device->GetDevice(),
+		m_TextureImage,
+		VK_FORMAT_R8G8B8A8_SRGB,
+		VK_IMAGE_ASPECT_COLOR_BIT,
+		1); // TODO: update this if mipmaps are generated
+}
+
+void Engine::CreateTextureSampler()
+{
+	VkPhysicalDeviceProperties devProp = m_Device->GetDeviceProperties();
+
+	VkSamplerCreateInfo samplerInfo{};
+	samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+	samplerInfo.magFilter = VK_FILTER_LINEAR;
+	samplerInfo.minFilter = VK_FILTER_LINEAR;
+	samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+	samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+	samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+	samplerInfo.anisotropyEnable = VK_TRUE;
+	samplerInfo.maxAnisotropy = devProp.limits.maxSamplerAnisotropy;
+	samplerInfo.compareEnable = VK_FALSE;
+	samplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;
+	samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+	samplerInfo.mipLodBias = 0.0f;
+	samplerInfo.minLod = 0.0f;
+	samplerInfo.maxLod = 1; // TODO: update if mipmaps are used
+	samplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+	samplerInfo.unnormalizedCoordinates = VK_FALSE;
+
+	ErrCheck(vkCreateSampler(m_Device->GetDevice(), &samplerInfo, nullptr, &m_TextureImageSampler) != VK_SUCCESS,
+		"Failed to create texture sampler!");
 }
 
 void Engine::CreateSyncObjects()

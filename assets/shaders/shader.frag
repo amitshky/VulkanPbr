@@ -9,6 +9,7 @@ layout(binding = 0) uniform UniformBufferObject
 	float ao;
 }
 ubo;
+layout(binding = 2) uniform sampler2D uAlbedoMap;
 
 layout(location = 0) in vec3 inNormal;
 layout(location = 1) in vec2 inTexCoords;
@@ -55,6 +56,8 @@ float GeometrySmithGGX(vec3 normal, vec3 viewDir, vec3 lightDir, float roughness
 
 void main()
 {
+	vec3 albedo = pow(texture(uAlbedoMap, inTexCoords).rgb, vec3(2.2));
+
 	vec3 lightColors[4] = {
 		vec3(10.0f, 10.0f, 10.0f),
 		vec3(10.0f, 10.0f, 10.0f),
@@ -77,7 +80,7 @@ void main()
 	// 0.04 and for metals, reflectivity is based on the albedo of the metal so we linearly interpolate between them
 	// based on the value of `metallic` parameter
 	vec3 reflectivity = vec3(0.04);
-	reflectivity = mix(reflectivity, ubo.albedo, ubo.metallic);
+	reflectivity = mix(reflectivity, albedo, ubo.metallic);
 
 	for (int i = 0; i < 1; ++i)
 	{
@@ -106,10 +109,10 @@ void main()
 
 		// reflectance equation
 		float nDotL = max(dot(normal, lightDir), 0.0);
-		Lo += ((kD * ubo.albedo / PI) + specular) * radiance * nDotL;
+		Lo += ((kD * albedo / PI) + specular) * radiance * nDotL;
 	}
 
-	vec3 ambient = vec3(0.001) * ubo.albedo * ubo.ao;
+	vec3 ambient = vec3(0.001) * albedo * ubo.ao;
 	vec3 color = ambient + Lo;
 
 	// tone mapping

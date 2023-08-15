@@ -56,6 +56,8 @@ VkRenderPassCreateInfo RenderPassCreateInfo(uint32_t attachmentCount,
 // descriptors
 VkDescriptorBufferInfo DescriptorBufferInfo(VkBuffer buffer, VkDeviceSize offset, VkDeviceSize range);
 
+VkDescriptorImageInfo DescriptorImageInfo(VkSampler sampler, VkImageView imageView);
+
 VkWriteDescriptorSet WriteDescriptorSet(VkDescriptorSet dstSet,
 	uint32_t dstBinding,
 	VkDescriptorType descriptorType,
