@@ -135,4 +135,9 @@ private:
 	uint32_t m_FrameCounter = 0;
 	std::chrono::time_point<std::chrono::high_resolution_clock> m_LastFrameTime;
 	std::chrono::time_point<std::chrono::high_resolution_clock> m_FpsTimePoint;
+
+	// ui variables
+	glm::vec3 m_Albedo = glm::vec3(0.5f, 0.5f, 0.1f);
+	float m_Metallic = 0.5f;
+	float m_Roughness = 0.2f;
 };

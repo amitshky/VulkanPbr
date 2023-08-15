@@ -1,6 +1,7 @@
 #include "engine/engine.h"
 
 #include "glm/gtc/matrix_inverse.hpp"
+#include "glm/gtc/type_ptr.hpp"
 #include "core/core.h"
 #include "core/input.h"
 #include "engine/initializers.h"
@@ -167,9 +168,9 @@ void Engine::UpdateUniformBuffers()
 {
 	UniformBufferObject ubo{};
 	ubo.cameraPos = m_Camera->GetCameraPosition();
-	ubo.albedo = glm::vec3(0.5f, 0.5f, 0.1f);
-	ubo.metallic = 0.9f;
-	ubo.roughness = 0.1f;
+	ubo.albedo = m_Albedo;
+	ubo.metallic = m_Metallic;
+	ubo.roughness = m_Roughness;
 	ubo.ao = 0.8f;
 
 	void* data = nullptr;
@@ -289,6 +290,12 @@ void Engine::OnUiRender()
 
 	ImGui::Begin("Profiler");
 	ImGui::Text("%.2f ms/frame (%d fps)", (1000.0f / static_cast<float>(m_LastFps)), m_LastFps);
+	ImGui::End();
+
+	ImGui::Begin("PBR Properties");
+	ImGui::SliderFloat("Metallic###metallic_pbr_prop", &m_Metallic, 0.0f, 1.0f);
+	ImGui::SliderFloat("Roughness###roughness_pbr_prop", &m_Roughness, 0.0f, 1.0f);
+	ImGui::ColorPicker3("Albedo###albedo_pbr_prop", glm::value_ptr(m_Albedo));
 	ImGui::End();
 
 	ImGuiOverlay::End(m_ActiveCommandBuffer);
