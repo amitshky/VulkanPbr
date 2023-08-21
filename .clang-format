@@ -1,14 +1,16 @@
 ---
 Language:        Cpp
+BasedOnStyle:  Microsoft
 AccessModifierOffset: -4
 AlignAfterOpenBracket: DontAlign
-AlignArrayOfStructures: Left
+AlignArrayOfStructures: None
 AlignConsecutiveAssignments: false
 AlignConsecutiveDeclarations: false
 AlignConsecutiveMacros: Consecutive
 AlignEscapedNewlines: Left
 AlignOperands: true
-AlignTrailingComments: false
+AlignTrailingComments:
+  Kind:            Never
 AllowAllParametersOfDeclarationOnNextLine: false
 AllowShortBlocksOnASingleLine: true
 AllowShortCaseLabelsOnASingleLine: false
@@ -60,6 +62,7 @@ ForEachMacros:
 - foreach
 - Q_FOREACH
 - BOOST_FOREACH
+IncludeBlocks:   Regroup
 IncludeCategories:
 - Priority: 2
   Regex: ^"(llvm|llvm-c|clang|clang-c)/
@@ -74,7 +77,6 @@ IndentWrappedFunctionNames: true
 JavaScriptQuotes: Leave
 JavaScriptWrapImports: true
 KeepEmptyLinesAtTheStartOfBlocks: true
-Language: Cpp
 MacroBlockBegin: ''
 MacroBlockEnd: ''
 MaxEmptyLinesToKeep: 2

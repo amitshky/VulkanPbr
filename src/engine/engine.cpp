@@ -65,9 +65,43 @@ void Engine::Init(const char* title, const uint64_t width, const uint64_t height
 	CreateVertexBuffer();
 	CreateIndexBuffer();
 
-	CreateTextureImage("assets/textures/bricks/Bricks01_COL_VAR1_3K.jpg");
-	CreateTextureImageView();
 	CreateTextureSampler();
+
+	VkFormat format = VK_FORMAT_R8G8B8A8_UNORM;
+	VkImageAspectFlags aspectFlags = VK_IMAGE_ASPECT_COLOR_BIT;
+	uint32_t miplevels = 1; // TODO: update if mipmaps are generated
+
+	CreateTextureImage("assets/textures/gold/MetalGoldPaint002_COL_2K_METALNESS.png",
+		m_AlbedoTextureImage,
+		m_AlbedoTextureImageMem,
+		format);
+	m_AlbedoTextureImageView =
+		utils::CreateImageView(m_Device->GetDevice(), m_AlbedoTextureImage, format, aspectFlags, miplevels);
+
+	CreateTextureImage("assets/textures/gold/MetalGoldPaint002_ROUGHNESS_2K_METALNESS.png",
+		m_RoughnessTextureImage,
+		m_RoughnessTextureImageMem,
+		format);
+	m_RoughnessTextureImageView =
+		utils::CreateImageView(m_Device->GetDevice(), m_RoughnessTextureImage, format, aspectFlags, miplevels);
+
+	CreateTextureImage("assets/textures/gold/MetalGoldPaint002_METALNESS_2K_METALNESS.png",
+		m_MetallicTextureImage,
+		m_MetallicTextureImageMem,
+		format);
+	m_MetallicTextureImageView =
+		utils::CreateImageView(m_Device->GetDevice(), m_MetallicTextureImage, format, aspectFlags, miplevels);
+
+	CreateTextureImage("assets/textures/white.png", m_AOTextureImage, m_AOTextureImageMem, format);
+	m_AOTextureImageView =
+		utils::CreateImageView(m_Device->GetDevice(), m_AOTextureImage, format, aspectFlags, miplevels);
+
+	CreateTextureImage("assets/textures/gold/MetalGoldPaint002_NRM_2K_METALNESS.png",
+		m_NormalTextureImage,
+		m_NormalTextureImageMem,
+		format);
+	m_NormalTextureImageView =
+		utils::CreateImageView(m_Device->GetDevice(), m_NormalTextureImage, format, aspectFlags, miplevels);
 
 	CreateDescriptorSetLayout();
 	CreateDescriptorSets();
@@ -103,9 +137,22 @@ void Engine::Cleanup()
 	}
 
 	vkDestroySampler(m_Device->GetDevice(), m_TextureImageSampler, nullptr);
-	vkDestroyImageView(m_Device->GetDevice(), m_TextureImageView, nullptr);
-	vkFreeMemory(m_Device->GetDevice(), m_TextureImageMem, nullptr);
-	vkDestroyImage(m_Device->GetDevice(), m_TextureImage, nullptr);
+
+	vkDestroyImageView(m_Device->GetDevice(), m_AlbedoTextureImageView, nullptr);
+	vkFreeMemory(m_Device->GetDevice(), m_AlbedoTextureImageMem, nullptr);
+	vkDestroyImage(m_Device->GetDevice(), m_AlbedoTextureImage, nullptr);
+	vkDestroyImageView(m_Device->GetDevice(), m_RoughnessTextureImageView, nullptr);
+	vkFreeMemory(m_Device->GetDevice(), m_RoughnessTextureImageMem, nullptr);
+	vkDestroyImage(m_Device->GetDevice(), m_RoughnessTextureImage, nullptr);
+	vkDestroyImageView(m_Device->GetDevice(), m_MetallicTextureImageView, nullptr);
+	vkFreeMemory(m_Device->GetDevice(), m_MetallicTextureImageMem, nullptr);
+	vkDestroyImage(m_Device->GetDevice(), m_MetallicTextureImage, nullptr);
+	vkDestroyImageView(m_Device->GetDevice(), m_AOTextureImageView, nullptr);
+	vkFreeMemory(m_Device->GetDevice(), m_AOTextureImageMem, nullptr);
+	vkDestroyImage(m_Device->GetDevice(), m_AOTextureImage, nullptr);
+	vkDestroyImageView(m_Device->GetDevice(), m_NormalTextureImageView, nullptr);
+	vkFreeMemory(m_Device->GetDevice(), m_NormalTextureImageMem, nullptr);
+	vkDestroyImage(m_Device->GetDevice(), m_NormalTextureImage, nullptr);
 
 	vkFreeMemory(m_Device->GetDevice(), m_IndexBufferMemory, nullptr);
 	vkDestroyBuffer(m_Device->GetDevice(), m_IndexBuffer, nullptr);
@@ -179,10 +226,6 @@ void Engine::UpdateUniformBuffers()
 {
 	UniformBufferObject ubo{};
 	ubo.cameraPos = m_Camera->GetCameraPosition();
-	ubo.albedo = m_Albedo;
-	ubo.metallic = m_Metallic;
-	ubo.roughness = m_Roughness;
-	ubo.ao = 0.8f;
 
 	void* data = nullptr;
 	vkMapMemory(m_Device->GetDevice(), m_UniformBufferMemory[m_CurrentFrameIndex], 0, sizeof(ubo), 0, &data);
@@ -301,13 +344,6 @@ void Engine::OnUiRender()
 	ImGui::Begin("Profiler");
 	ImGui::Text("%.2f ms/frame (%d fps)", (1000.0f / static_cast<float>(m_LastFps)), m_LastFps);
 	ImGui::End();
-
-	ImGui::Begin("PBR Properties");
-	ImGui::SliderFloat("Metallic###metallic_pbr_prop", &m_Metallic, 0.0f, 1.0f);
-	ImGui::SliderFloat("Roughness###roughness_pbr_prop", &m_Roughness, 0.0f, 1.0f);
-	ImGui::ColorPicker3("Albedo###albedo_pbr_prop", glm::value_ptr(m_Albedo));
-	ImGui::End();
-
 	ImGuiOverlay::End(m_ActiveCommandBuffer);
 }
 
@@ -601,38 +637,21 @@ void Engine::CreateUniformBuffers()
 
 void Engine::CreateDescriptorSetLayout()
 {
-	std::vector<VkDescriptorSetLayoutBinding> layouts;
-
-	VkDescriptorSetLayoutBinding layoutBinding{};
-	layoutBinding.binding = 0;
-	layoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-	layoutBinding.descriptorCount = 1;
-	layoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-	layoutBinding.pImmutableSamplers = nullptr;
-	layouts.push_back(layoutBinding);
-
-	// for dynamic uniform buffer
-	VkDescriptorSetLayoutBinding dLayoutBinding{};
-	dLayoutBinding.binding = 1;
-	dLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
-	dLayoutBinding.descriptorCount = 1;
-	dLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-	dLayoutBinding.pImmutableSamplers = nullptr;
-	layouts.push_back(dLayoutBinding);
-
-	// for textures
-	VkDescriptorSetLayoutBinding textureLayoutBinding{};
-	textureLayoutBinding.binding = 2;
-	textureLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-	textureLayoutBinding.descriptorCount = 1;
-	textureLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-	textureLayoutBinding.pImmutableSamplers = nullptr;
-	layouts.push_back(textureLayoutBinding);
+	std::vector<VkDescriptorSetLayoutBinding> layoutBindings;
+	// dynamic uniform buffer for matrices
+	layoutBindings.push_back(
+		inits::DescriptorSetLayoutBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 1, VK_SHADER_STAGE_VERTEX_BIT));
+	// uniform buffer for fragment shader
+	layoutBindings.push_back(
+		inits::DescriptorSetLayoutBinding(1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_FRAGMENT_BIT));
+	// texture maps
+	layoutBindings.push_back(inits::DescriptorSetLayoutBinding(
+		2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 5, VK_SHADER_STAGE_FRAGMENT_BIT));
 
 	VkDescriptorSetLayoutCreateInfo descriptorSetLayoutInfo{};
 	descriptorSetLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-	descriptorSetLayoutInfo.bindingCount = static_cast<uint32_t>(layouts.size());
-	descriptorSetLayoutInfo.pBindings = layouts.data();
+	descriptorSetLayoutInfo.bindingCount = static_cast<uint32_t>(layoutBindings.size());
+	descriptorSetLayoutInfo.pBindings = layoutBindings.data();
 
 	ErrCheck(
 		vkCreateDescriptorSetLayout(m_Device->GetDevice(), &descriptorSetLayoutInfo, nullptr, &m_DescriptorSetLayout)
@@ -656,19 +675,25 @@ void Engine::CreateDescriptorSets()
 
 	for (uint64_t i = 0; i < Config::maxFramesInFlight; ++i)
 	{
-		VkDescriptorBufferInfo bufferInfo =
-			inits::DescriptorBufferInfo(m_UniformBuffers[i], 0, sizeof(UniformBufferObject));
 		VkDescriptorBufferInfo dBufferInfo =
 			inits::DescriptorBufferInfo(m_DynamicUniformBuffers[i], 0, DynamicUBO::GetSize());
-		VkDescriptorImageInfo textureImageInfo = inits::DescriptorImageInfo(m_TextureImageSampler, m_TextureImageView);
+		VkDescriptorBufferInfo bufferInfo =
+			inits::DescriptorBufferInfo(m_UniformBuffers[i], 0, sizeof(UniformBufferObject));
+		std::array<VkDescriptorImageInfo, 5> textureImageInfos = {
+			inits::DescriptorImageInfo(m_TextureImageSampler, m_AlbedoTextureImageView),
+			inits::DescriptorImageInfo(m_TextureImageSampler, m_RoughnessTextureImageView),
+			inits::DescriptorImageInfo(m_TextureImageSampler, m_MetallicTextureImageView),
+			inits::DescriptorImageInfo(m_TextureImageSampler, m_AOTextureImageView),
+			inits::DescriptorImageInfo(m_TextureImageSampler, m_NormalTextureImageView),
+		};
 
 		std::vector<VkWriteDescriptorSet> descWrites;
 		descWrites.push_back(inits::WriteDescriptorSet(
-			m_DescriptorSets[i], 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, &bufferInfo, nullptr));
+			m_DescriptorSets[i], 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 1, &dBufferInfo, nullptr));
 		descWrites.push_back(inits::WriteDescriptorSet(
-			m_DescriptorSets[i], 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 1, &dBufferInfo, nullptr));
+			m_DescriptorSets[i], 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, &bufferInfo, nullptr));
 		descWrites.push_back(inits::WriteDescriptorSet(
-			m_DescriptorSets[i], 2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, nullptr, &textureImageInfo));
+			m_DescriptorSets[i], 2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 5, nullptr, textureImageInfos.data()));
 
 		vkUpdateDescriptorSets(
 			m_Device->GetDevice(), static_cast<uint32_t>(descWrites.size()), descWrites.data(), 0, nullptr);
@@ -828,7 +853,10 @@ void Engine::CreateIndexBuffer()
 	vkDestroyBuffer(m_Device->GetDevice(), stagingBuffer, nullptr);
 }
 
-void Engine::CreateTextureImage(const char* texturePath)
+void Engine::CreateTextureImage(const char* texturePath,
+	VkImage& textureImage,
+	VkDeviceMemory& textureImageMem,
+	VkFormat format)
 {
 	int width = 0;
 	int height = 0;
@@ -836,7 +864,7 @@ void Engine::CreateTextureImage(const char* texturePath)
 	auto* imageData = stbi_load(texturePath, &width, &height, &channels, STBI_rgb_alpha);
 	ErrCheck(!imageData, "Unable to load texture: \"{}\"", texturePath);
 
-	VkDeviceSize size = width * height * 4;
+	VkDeviceSize size = static_cast<uint64_t>(width) * static_cast<uint64_t>(height) * 4;
 	const uint32_t miplevels = 1;
 
 	VkBuffer stagingBuffer = nullptr;
@@ -861,40 +889,31 @@ void Engine::CreateTextureImage(const char* texturePath)
 		height,
 		miplevels,
 		VK_SAMPLE_COUNT_1_BIT,
-		VK_FORMAT_R8G8B8A8_SRGB,
+		format,
 		VK_IMAGE_TILING_OPTIMAL,
 		VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
 		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-		m_TextureImage,
-		m_TextureImageMem);
+		textureImage,
+		textureImageMem);
 
 	utils::TransitionImageLayout(m_Device,
 		m_CommandPool,
-		m_TextureImage,
+		textureImage,
 		VK_IMAGE_LAYOUT_UNDEFINED,
 		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
 		miplevels);
 
-	utils::CopyBufferToImage(m_Device, m_CommandPool, stagingBuffer, m_TextureImage, width, height);
+	utils::CopyBufferToImage(m_Device, m_CommandPool, stagingBuffer, textureImage, width, height);
 
 	utils::TransitionImageLayout(m_Device,
 		m_CommandPool,
-		m_TextureImage,
+		textureImage,
 		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
 		VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
 		miplevels);
 
 	vkFreeMemory(m_Device->GetDevice(), stagingBufferMem, nullptr);
 	vkDestroyBuffer(m_Device->GetDevice(), stagingBuffer, nullptr);
-}
-
-void Engine::CreateTextureImageView()
-{
-	m_TextureImageView = utils::CreateImageView(m_Device->GetDevice(),
-		m_TextureImage,
-		VK_FORMAT_R8G8B8A8_SRGB,
-		VK_IMAGE_ASPECT_COLOR_BIT,
-		1); // TODO: update this if mipmaps are generated
 }
 
 void Engine::CreateTextureSampler()

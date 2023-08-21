@@ -62,9 +62,11 @@ private:
 	void CreateVertexBuffer();
 	void CreateIndexBuffer();
 
-	void CreateTextureImage(const char* texturePath);
-	void CreateTextureImageView();
 	void CreateTextureSampler();
+	void CreateTextureImage(const char* texturePath,
+		VkImage& textureImage,
+		VkDeviceMemory& textureImageMem,
+		VkFormat format);
 
 	void CreateSyncObjects();
 
@@ -111,10 +113,23 @@ private:
 	std::vector<VkBuffer> m_DynamicUniformBuffers;
 	std::vector<VkDeviceMemory> m_DynamicUniformBufferMemory;
 
-	VkImage m_TextureImage;
-	VkDeviceMemory m_TextureImageMem;
-	VkImageView m_TextureImageView;
+	// TODO: make a texture class
 	VkSampler m_TextureImageSampler;
+	VkImage m_AlbedoTextureImage;
+	VkDeviceMemory m_AlbedoTextureImageMem;
+	VkImageView m_AlbedoTextureImageView;
+	VkImage m_RoughnessTextureImage;
+	VkDeviceMemory m_RoughnessTextureImageMem;
+	VkImageView m_RoughnessTextureImageView;
+	VkImage m_MetallicTextureImage;
+	VkDeviceMemory m_MetallicTextureImageMem;
+	VkImageView m_MetallicTextureImageView;
+	VkImage m_AOTextureImage;
+	VkDeviceMemory m_AOTextureImageMem;
+	VkImageView m_AOTextureImageView;
+	VkImage m_NormalTextureImage;
+	VkDeviceMemory m_NormalTextureImageMem;
+	VkImageView m_NormalTextureImageView;
 
 	VkPipeline m_Pipeline{};
 
@@ -146,9 +161,4 @@ private:
 	uint32_t m_FrameCounter = 0;
 	std::chrono::time_point<std::chrono::high_resolution_clock> m_LastFrameTime;
 	std::chrono::time_point<std::chrono::high_resolution_clock> m_FpsTimePoint;
-
-	// ui variables
-	glm::vec3 m_Albedo = glm::vec3(0.5f, 0.5f, 0.1f);
-	float m_Metallic = 0.5f;
-	float m_Roughness = 0.2f;
 };

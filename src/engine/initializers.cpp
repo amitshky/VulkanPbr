@@ -153,6 +153,21 @@ VkRenderPassCreateInfo RenderPassCreateInfo(uint32_t attachmentCount,
 
 
 // descriptors
+VkDescriptorSetLayoutBinding DescriptorSetLayoutBinding(uint32_t binding,
+	VkDescriptorType descriptorType,
+	uint32_t descriptorCount,
+	VkShaderStageFlags stageFlags)
+{
+	VkDescriptorSetLayoutBinding layoutBinding{};
+	layoutBinding.binding = binding;
+	layoutBinding.descriptorType = descriptorType;
+	layoutBinding.descriptorCount = descriptorCount;
+	layoutBinding.stageFlags = stageFlags;
+	layoutBinding.pImmutableSamplers = nullptr;
+
+	return layoutBinding;
+}
+
 VkDescriptorBufferInfo DescriptorBufferInfo(VkBuffer buffer, VkDeviceSize offset, VkDeviceSize range)
 {
 	VkDescriptorBufferInfo info{};

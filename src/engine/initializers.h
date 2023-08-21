@@ -54,6 +54,11 @@ VkRenderPassCreateInfo RenderPassCreateInfo(uint32_t attachmentCount,
 
 
 // descriptors
+VkDescriptorSetLayoutBinding DescriptorSetLayoutBinding(uint32_t binding,
+	VkDescriptorType descriptorType,
+	uint32_t descriptorCount,
+	VkShaderStageFlags stageFlags);
+
 VkDescriptorBufferInfo DescriptorBufferInfo(VkBuffer buffer, VkDeviceSize offset, VkDeviceSize range);
 
 VkDescriptorImageInfo DescriptorImageInfo(VkSampler sampler, VkImageView imageView);

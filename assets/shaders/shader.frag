@@ -1,19 +1,16 @@
 #version 450
 
-layout(binding = 0) uniform UniformBufferObject
+layout(binding = 1) uniform UniformBufferObject
 {
 	vec3 cameraPos;
-	vec3 albedo;
-	float metallic;
-	float roughness;
-	float ao;
 }
 ubo;
-layout(binding = 2) uniform sampler2D uAlbedoMap;
+layout(binding = 2) uniform sampler2D textureMaps[5];
 
 layout(location = 0) in vec3 inNormal;
 layout(location = 1) in vec2 inTexCoords;
 layout(location = 2) in vec3 inFragPos;
+layout(location = 3) in mat3 inTBN;
 
 layout(location = 0) out vec4 outColor;
 
@@ -56,23 +53,28 @@ float GeometrySmithGGX(vec3 normal, vec3 viewDir, vec3 lightDir, float roughness
 
 void main()
 {
-	vec3 albedo = pow(texture(uAlbedoMap, inTexCoords).rgb, vec3(2.2));
+	vec3 albedo = pow(texture(textureMaps[0], inTexCoords).rgb, vec3(2.2));
+	float roughness = texture(textureMaps[1], inTexCoords).r;
+	float metallic = texture(textureMaps[2], inTexCoords).r;
+	float ao = texture(textureMaps[3], inTexCoords).r;
+	vec3 normal = texture(textureMaps[4], inTexCoords).rgb;
+	normal = normal * 2.0 - 1.0; // [0, 1] to [-1, 1]
+	normal = normalize(inTBN * normal);
 
 	vec3 lightColors[4] = {
-		vec3(10.0f, 10.0f, 10.0f),
-		vec3(10.0f, 10.0f, 10.0f),
-		vec3(10.0f, 10.0f, 10.0f),
-		vec3(10.0f, 10.0f, 10.0f),
+		vec3(50.0f, 50.0f, 50.0f),
+		vec3(50.0f, 50.0f, 50.0f),
+		vec3(50.0f, 50.0f, 50.0f),
+		vec3(50.0f, 50.0f, 50.0f),
 	};
 
 	vec3 lightPos[4] = {
-		vec3(0.0, 0.0, 3.0),
-		vec3(0.0, 10.0, 0.0),
-		vec3(10.0, 0.0, 0.0),
-		vec3(-10.0, 0.0, 10.0),
+		vec3(0.0, 0.0, 30.0),
+		vec3(0.0, 30.0, 0.0),
+		vec3(30.0, 0.0, 0.0),
+		vec3(-30.0, 0.0, 0.0),
 	};
 
-	vec3 normal = normalize(inNormal);
 	vec3 viewDir = normalize(ubo.cameraPos - inFragPos);
 
 	vec3 Lo = vec3(0.0);
@@ -80,9 +82,9 @@ void main()
 	// 0.04 and for metals, reflectivity is based on the albedo of the metal so we linearly interpolate between them
 	// based on the value of `metallic` parameter
 	vec3 reflectivity = vec3(0.04);
-	reflectivity = mix(reflectivity, albedo, ubo.metallic);
+	reflectivity = mix(reflectivity, albedo, metallic);
 
-	for (int i = 0; i < 1; ++i)
+	for (int i = 0; i < 4; ++i)
 	{
 		// calc per-light radiance
 		vec3 lightVec = lightPos[i] - inFragPos;
@@ -93,8 +95,8 @@ void main()
 		vec3 radiance = lightColors[i] * attenuation;
 
 		// Cook-Torrance BRDF
-		float NDF = DistributionGGX(normal, halfway, ubo.roughness);
-		float G = GeometrySmithGGX(normal, viewDir, lightDir, ubo.roughness);
+		float NDF = DistributionGGX(normal, halfway, roughness);
+		float G = GeometrySmithGGX(normal, viewDir, lightDir, roughness);
 		vec3 F = FresnelSchlick(clamp(dot(halfway, viewDir), 0.0, 1.0), reflectivity);
 
 		vec3 numerator = NDF * G * F;
@@ -105,14 +107,14 @@ void main()
 		// energy conservation
 		vec3 kS = F;
 		vec3 kD = vec3(1.0) - kS;
-		kD *= 1.0 - ubo.metallic; // metals have no diffuse light
+		kD *= 1.0 - metallic; // metals have no diffuse light
 
 		// reflectance equation
 		float nDotL = max(dot(normal, lightDir), 0.0);
 		Lo += ((kD * albedo / PI) + specular) * radiance * nDotL;
 	}
 
-	vec3 ambient = vec3(0.001) * albedo * ubo.ao;
+	vec3 ambient = vec3(0.01) * albedo * ao;
 	vec3 color = ambient + Lo;
 
 	// tone mapping

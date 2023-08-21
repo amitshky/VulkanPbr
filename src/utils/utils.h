@@ -102,6 +102,7 @@ void EndSingleTimeCommands(VkCommandBuffer cmdBuff,
 	VkQueue graphicsQueue);
 
 
+void CalcTangentVectors(std::vector<Vertex>& vertices);
 std::pair<std::vector<Vertex>, std::vector<uint32_t>> GenerateMeshData();
 
 } // namespace utils
