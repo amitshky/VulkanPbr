@@ -8,7 +8,7 @@ set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT $
 
 
 # project options
-option(VKPBR_USE_PRE_BUILT_LIB "Use pre-built libraries" ON)
+option(VKPBR_USE_PRE_BUILT_LIB "Use pre-built libraries" OFF)
 option(VKPBR_ENABLE_CLANG_TIDY_CHECK "Enables clang-tidy check during build" OFF)
 
 # GLFW options

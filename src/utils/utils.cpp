@@ -5,6 +5,7 @@
 #include "engine/engine.h"
 #include <set>
 #include <string>
+#include <algorithm>
 
 
 namespace utils {
