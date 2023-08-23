@@ -48,12 +48,12 @@ python format.py
 ```
 
 
-<!-- ## Usage
+## Usage
 * WASD to move the camera forward, left, back, and right respectively.
 * E and Q to move the camera up and down.
 * R to reset the camera
 * Ctrl+Q to close the window
-* Left click and drag the mouse to move the camera -->
+* Left click and drag the mouse to move the camera
 
 
 ## Screenshots
@@ -66,4 +66,3 @@ python format.py
 * [Vulkan Specification](https://registry.khronos.org/vulkan/specs/1.3-extensions/pdf/vkspec.pdf)
 * [Sascha Willems examples](https://github.com/SaschaWillems/Vulkan)
 * [vkguide.dev](https://vkguide.dev/)
-* [An introduction to Shader Art Coding - kishimisu](https://youtu.be/f4s1h2YETNY)
