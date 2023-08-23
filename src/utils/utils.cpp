@@ -119,7 +119,6 @@ VkSurfaceFormatKHR ChooseSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& av
 {
 	for (const auto& format : availableFormats)
 	{
-		// NOTE: use `VK_FORMAT_B8G8R8A8_UNORM` for imgui
 		if (format.format == VK_FORMAT_B8G8R8A8_UNORM && format.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
 			return format;
 	}

@@ -111,7 +111,7 @@ struct hash<Vertex>
 struct SceneUBO
 {
 	alignas(16) glm::vec3 cameraPos;
-	alignas(16) glm::vec3 lightPos;
+	alignas(16) glm::vec4 lightPos[4]; // vec4 for alignment; the shader uses only the first 3 components
 	alignas(16) glm::vec3 lightColors;
 
 	[[nodiscard]] static inline uint64_t GetSize() { return sizeof(SceneUBO); }

@@ -13,14 +13,6 @@ layout(binding = 0) uniform MatrixUBO
 }
 mat;
 
-layout(binding = 1) uniform SceneUBO
-{
-	vec3 cameraPos;
-	vec3 lightPos[1];
-	vec3 lightColors[1];
-}
-scene;
-
 layout(location = 0) out VsOut
 {
 	vec2 texCoords;

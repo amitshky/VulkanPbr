@@ -66,7 +66,8 @@ private:
 	void CreateTextureImage(const char* texturePath,
 		VkImage& textureImage,
 		VkDeviceMemory& textureImageMem,
-		VkFormat format);
+		VkFormat format,
+		uint32_t& miplevels);
 
 	void CreateSyncObjects();
 
@@ -112,24 +113,13 @@ private:
 	std::vector<VkDeviceMemory> m_SceneUniformBufferMemory;
 	std::vector<VkBuffer> m_MatUniformBuffers;
 	std::vector<VkDeviceMemory> m_MatUniformBufferMemory;
+	std::vector<VkBuffer> m_LightUniformBuffers;
+	std::vector<VkDeviceMemory> m_LightUniformBufferMemory;
 
-	// TODO: make a texture class
 	VkSampler m_TextureImageSampler;
-	VkImage m_AlbedoTextureImage;
-	VkDeviceMemory m_AlbedoTextureImageMem;
-	VkImageView m_AlbedoTextureImageView;
-	VkImage m_RoughnessTextureImage;
-	VkDeviceMemory m_RoughnessTextureImageMem;
-	VkImageView m_RoughnessTextureImageView;
-	VkImage m_MetallicTextureImage;
-	VkDeviceMemory m_MetallicTextureImageMem;
-	VkImageView m_MetallicTextureImageView;
-	VkImage m_AOTextureImage;
-	VkDeviceMemory m_AOTextureImageMem;
-	VkImageView m_AOTextureImageView;
-	VkImage m_NormalTextureImage;
-	VkDeviceMemory m_NormalTextureImageMem;
-	VkImageView m_NormalTextureImageView;
+	std::array<VkImage, 5> m_TextureImages;
+	std::array<VkImageView, 5> m_TextureImageViews;
+	std::array<VkDeviceMemory, 5> m_TextureImageMems;
 
 	VkPipeline m_Pipeline{};
 

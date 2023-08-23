@@ -1,10 +1,12 @@
 #version 450
 
+const uint NUM_LIGHTS = 4;
+
 layout(binding = 1) uniform SceneUBO
 {
 	vec3 cameraPos;
-	vec3 lightPos[1];
-	vec3 lightColors[1];
+	vec3 lightPos[NUM_LIGHTS];
+	vec3 lightColors;
 }
 scene;
 
@@ -57,16 +59,8 @@ float GeometrySmithGGX(vec3 normal, vec3 viewDir, vec3 lightDir, float roughness
 	return geometryView * geometryLight;
 }
 
-vec3 Pbr()
+vec3 Pbr(vec3 albedo, float roughness, float metallic, float ao, vec3 normal)
 {
-	vec3 albedo = pow(texture(textureMaps[0], fsIn.texCoords).rgb, vec3(2.2));
-	float roughness = texture(textureMaps[1], fsIn.texCoords).r;
-	float metallic = texture(textureMaps[2], fsIn.texCoords).r;
-	float ao = texture(textureMaps[3], fsIn.texCoords).r;
-	vec3 normal = texture(textureMaps[4], fsIn.texCoords).rgb;
-	normal = (normal * 2.0 - 1.0); // [0, 1] to [-1, 1]
-	normal = normalize(fsIn.TBN * normal);
-
 	vec3 viewDir = normalize(scene.cameraPos - fsIn.fragPos);
 
 	vec3 Lo = vec3(0.0);
@@ -76,7 +70,7 @@ vec3 Pbr()
 	vec3 reflectivity = vec3(0.04);
 	reflectivity = mix(reflectivity, albedo, metallic);
 
-	for (int i = 0; i < 1; ++i)
+	for (int i = 0; i < NUM_LIGHTS; ++i)
 	{
 		// calc per-light radiance
 		vec3 lightVec = scene.lightPos[i] - fsIn.fragPos;
@@ -84,7 +78,7 @@ vec3 Pbr()
 		vec3 halfway = normalize(viewDir + lightDir);
 		float dist = length(lightVec);
 		float attenuation = 1.0 / (dist * dist);
-		vec3 radiance = scene.lightColors[i] * attenuation;
+		vec3 radiance = scene.lightColors * attenuation;
 
 		// Cook-Torrance BRDF
 		float NDF = DistributionGGX(normal, halfway, roughness);
@@ -114,7 +108,15 @@ vec3 Pbr()
 
 void main()
 {
-	vec3 color = Pbr();
+	vec3 albedo = pow(texture(textureMaps[0], fsIn.texCoords).rgb, vec3(2.2));
+	float roughness = texture(textureMaps[1], fsIn.texCoords).r;
+	float metallic = texture(textureMaps[2], fsIn.texCoords).r;
+	float ao = texture(textureMaps[3], fsIn.texCoords).r;
+	vec3 normal = texture(textureMaps[4], fsIn.texCoords).rgb;
+	normal = (normal * 2.0 - 1.0); // [0, 1] to [-1, 1]
+	normal = normalize(fsIn.TBN * normal);
+
+	vec3 color = Pbr(albedo, roughness, metallic, ao, normal);
 
 	// tone mapping
 	color = color / (color + vec3(1.0));
