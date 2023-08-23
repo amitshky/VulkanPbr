@@ -1,16 +1,22 @@
 #version 450
 
-layout(binding = 1) uniform UniformBufferObject
+layout(binding = 1) uniform SceneUBO
 {
 	vec3 cameraPos;
+	vec3 lightPos[1];
+	vec3 lightColors[1];
 }
-ubo;
+scene;
+
 layout(binding = 2) uniform sampler2D textureMaps[5];
 
-layout(location = 0) in vec3 inNormal;
-layout(location = 1) in vec2 inTexCoords;
-layout(location = 2) in vec3 inFragPos;
-layout(location = 3) in mat3 inTBN;
+layout(location = 0) in FsIn
+{
+	vec2 texCoords;
+	vec3 fragPos;
+	mat3 TBN;
+}
+fsIn;
 
 layout(location = 0) out vec4 outColor;
 
@@ -51,31 +57,17 @@ float GeometrySmithGGX(vec3 normal, vec3 viewDir, vec3 lightDir, float roughness
 	return geometryView * geometryLight;
 }
 
-void main()
+vec3 Pbr()
 {
-	vec3 albedo = pow(texture(textureMaps[0], inTexCoords).rgb, vec3(2.2));
-	float roughness = texture(textureMaps[1], inTexCoords).r;
-	float metallic = texture(textureMaps[2], inTexCoords).r;
-	float ao = texture(textureMaps[3], inTexCoords).r;
-	vec3 normal = texture(textureMaps[4], inTexCoords).rgb;
-	normal = normal * 2.0 - 1.0; // [0, 1] to [-1, 1]
-	normal = normalize(inTBN * normal);
+	vec3 albedo = pow(texture(textureMaps[0], fsIn.texCoords).rgb, vec3(2.2));
+	float roughness = texture(textureMaps[1], fsIn.texCoords).r;
+	float metallic = texture(textureMaps[2], fsIn.texCoords).r;
+	float ao = texture(textureMaps[3], fsIn.texCoords).r;
+	vec3 normal = texture(textureMaps[4], fsIn.texCoords).rgb;
+	normal = (normal * 2.0 - 1.0); // [0, 1] to [-1, 1]
+	normal = normalize(fsIn.TBN * normal);
 
-	vec3 lightColors[4] = {
-		vec3(50.0f, 50.0f, 50.0f),
-		vec3(50.0f, 50.0f, 50.0f),
-		vec3(50.0f, 50.0f, 50.0f),
-		vec3(50.0f, 50.0f, 50.0f),
-	};
-
-	vec3 lightPos[4] = {
-		vec3(0.0, 0.0, 30.0),
-		vec3(0.0, 30.0, 0.0),
-		vec3(30.0, 0.0, 0.0),
-		vec3(-30.0, 0.0, 0.0),
-	};
-
-	vec3 viewDir = normalize(ubo.cameraPos - inFragPos);
+	vec3 viewDir = normalize(scene.cameraPos - fsIn.fragPos);
 
 	vec3 Lo = vec3(0.0);
 	// in metallic workflow, we assume that most dielectrics (non-metals) look visually similar with reflectivity
@@ -84,15 +76,15 @@ void main()
 	vec3 reflectivity = vec3(0.04);
 	reflectivity = mix(reflectivity, albedo, metallic);
 
-	for (int i = 0; i < 4; ++i)
+	for (int i = 0; i < 1; ++i)
 	{
 		// calc per-light radiance
-		vec3 lightVec = lightPos[i] - inFragPos;
+		vec3 lightVec = scene.lightPos[i] - fsIn.fragPos;
 		vec3 lightDir = normalize(lightVec);
 		vec3 halfway = normalize(viewDir + lightDir);
 		float dist = length(lightVec);
 		float attenuation = 1.0 / (dist * dist);
-		vec3 radiance = lightColors[i] * attenuation;
+		vec3 radiance = scene.lightColors[i] * attenuation;
 
 		// Cook-Torrance BRDF
 		float NDF = DistributionGGX(normal, halfway, roughness);
@@ -116,6 +108,13 @@ void main()
 
 	vec3 ambient = vec3(0.01) * albedo * ao;
 	vec3 color = ambient + Lo;
+
+	return color;
+}
+
+void main()
+{
+	vec3 color = Pbr();
 
 	// tone mapping
 	color = color / (color + vec3(1.0));

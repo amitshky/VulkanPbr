@@ -107,7 +107,7 @@ void Engine::Init(const char* title, const uint64_t width, const uint64_t height
 	CreateDescriptorSets();
 	CreatePipelineLayout();
 
-	CreatePipeline("assets/shaders/shader.vert.spv", "assets/shaders/shader.frag.spv");
+	CreatePipeline("assets/shaders/out/normalMapInvTBN.vert.spv", "assets/shaders/out/normalMapInvTBN.frag.spv");
 	CreateSyncObjects();
 
 	m_Camera = std::make_unique<Camera>(m_AspectRatio);
@@ -165,11 +165,11 @@ void Engine::Cleanup()
 
 	for (uint64_t i = 0; i < Config::maxFramesInFlight; ++i)
 	{
-		vkFreeMemory(m_Device->GetDevice(), m_DynamicUniformBufferMemory[i], nullptr);
-		vkDestroyBuffer(m_Device->GetDevice(), m_DynamicUniformBuffers[i], nullptr);
+		vkFreeMemory(m_Device->GetDevice(), m_MatUniformBufferMemory[i], nullptr);
+		vkDestroyBuffer(m_Device->GetDevice(), m_MatUniformBuffers[i], nullptr);
 
-		vkFreeMemory(m_Device->GetDevice(), m_UniformBufferMemory[i], nullptr);
-		vkDestroyBuffer(m_Device->GetDevice(), m_UniformBuffers[i], nullptr);
+		vkFreeMemory(m_Device->GetDevice(), m_SceneUniformBufferMemory[i], nullptr);
+		vkDestroyBuffer(m_Device->GetDevice(), m_SceneUniformBuffers[i], nullptr);
 	}
 
 	CleanupSwapchain();
@@ -224,23 +224,27 @@ void Engine::Draw(float deltatime)
 
 void Engine::UpdateUniformBuffers()
 {
-	UniformBufferObject ubo{};
-	ubo.cameraPos = m_Camera->GetCameraPosition();
+	SceneUBO scene{};
+	scene.cameraPos = m_Camera->GetCameraPosition();
+	scene.lightPos = glm::vec3(0.0f, 0.0f, 30.0f);
+	scene.lightColors = glm::vec3(50.0f, 50.0f, 50.0f);
 
 	void* data = nullptr;
-	vkMapMemory(m_Device->GetDevice(), m_UniformBufferMemory[m_CurrentFrameIndex], 0, sizeof(ubo), 0, &data);
-	memcpy(data, &ubo, sizeof(ubo));
-	vkUnmapMemory(m_Device->GetDevice(), m_UniformBufferMemory[m_CurrentFrameIndex]);
+	vkMapMemory(
+		m_Device->GetDevice(), m_SceneUniformBufferMemory[m_CurrentFrameIndex], 0, SceneUBO::GetSize(), 0, &data);
+	memcpy(data, &scene, SceneUBO::GetSize());
+	vkUnmapMemory(m_Device->GetDevice(), m_SceneUniformBufferMemory[m_CurrentFrameIndex]);
 
-	DynamicUBO dUbo{};
-	dUbo.model = glm::mat4(1.0);
-	dUbo.model = glm::translate(dUbo.model, glm::vec3(0.0f, 0.0f, 0.0f));
-	dUbo.viewProj = m_Camera->GetViewProjectionMatrix();
-	dUbo.normalMat = glm::inverseTranspose(dUbo.model);
+	MatrixUBO mat{};
+	mat.model = glm::mat4(1.0);
+	mat.model = glm::translate(mat.model, glm::vec3(0.0f, 0.0f, 0.0f));
+	mat.viewProj = m_Camera->GetViewProjectionMatrix();
+	mat.normal = glm::inverseTranspose(mat.model);
 
-	vkMapMemory(m_Device->GetDevice(), m_DynamicUniformBufferMemory[m_CurrentFrameIndex], 0, sizeof(dUbo), 0, &data);
-	memcpy(data, &dUbo, sizeof(dUbo));
-	vkUnmapMemory(m_Device->GetDevice(), m_DynamicUniformBufferMemory[m_CurrentFrameIndex]);
+	vkMapMemory(
+		m_Device->GetDevice(), m_MatUniformBufferMemory[m_CurrentFrameIndex], 0, MatrixUBO::GetSize(), 0, &data);
+	memcpy(data, &mat, MatrixUBO::GetSize());
+	vkUnmapMemory(m_Device->GetDevice(), m_MatUniformBufferMemory[m_CurrentFrameIndex]);
 }
 
 void Engine::BeginScene()
@@ -381,17 +385,17 @@ void Engine::CreateDescriptorPool()
 {
 	const uint32_t poolSizeCount = 1000;
 	VkDescriptorPoolSize poolSizes[] = {
-		{VK_DESCRIPTOR_TYPE_SAMPLER,                 poolSizeCount},
-		{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, poolSizeCount},
-		{ VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,          poolSizeCount},
-		{ VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,          poolSizeCount},
-		{ VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER,   poolSizeCount},
-		{ VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER,   poolSizeCount},
-		{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,         poolSizeCount},
-		{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,         poolSizeCount},
-		{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, poolSizeCount},
-		{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, poolSizeCount},
-		{ VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT,       poolSizeCount},
+		{ VK_DESCRIPTOR_TYPE_SAMPLER, poolSizeCount },
+		{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, poolSizeCount },
+		{ VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, poolSizeCount },
+		{ VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, poolSizeCount },
+		{ VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, poolSizeCount },
+		{ VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, poolSizeCount },
+		{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, poolSizeCount },
+		{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, poolSizeCount },
+		{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, poolSizeCount },
+		{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, poolSizeCount },
+		{ VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, poolSizeCount },
 	};
 
 	const VkDescriptorPoolCreateInfo descriptorPoolInfo =
@@ -609,13 +613,13 @@ void Engine::CreateFramebuffers()
 
 void Engine::CreateUniformBuffers()
 {
-	const VkDeviceSize bufferSize = sizeof(UniformBufferObject);
-	m_UniformBuffers.resize(Config::maxFramesInFlight);
-	m_UniformBufferMemory.resize(Config::maxFramesInFlight);
+	const VkDeviceSize bufferSize = SceneUBO::GetSize();
+	m_SceneUniformBuffers.resize(Config::maxFramesInFlight);
+	m_SceneUniformBufferMemory.resize(Config::maxFramesInFlight);
 
-	const VkDeviceSize dBufferSize = DynamicUBO::GetSize();
-	m_DynamicUniformBuffers.resize(Config::maxFramesInFlight);
-	m_DynamicUniformBufferMemory.resize(Config::maxFramesInFlight);
+	const VkDeviceSize dBufferSize = MatrixUBO::GetSize();
+	m_MatUniformBuffers.resize(Config::maxFramesInFlight);
+	m_MatUniformBufferMemory.resize(Config::maxFramesInFlight);
 
 	for (uint64_t i = 0; i < Config::maxFramesInFlight; ++i)
 	{
@@ -623,27 +627,27 @@ void Engine::CreateUniformBuffers()
 			bufferSize,
 			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
 			VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
-			m_UniformBuffers[i],
-			m_UniformBufferMemory[i]);
+			m_SceneUniformBuffers[i],
+			m_SceneUniformBufferMemory[i]);
 
 		utils::CreateBuffer(m_Device,
 			dBufferSize,
 			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
 			VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
-			m_DynamicUniformBuffers[i],
-			m_DynamicUniformBufferMemory[i]);
+			m_MatUniformBuffers[i],
+			m_MatUniformBufferMemory[i]);
 	}
 }
 
 void Engine::CreateDescriptorSetLayout()
 {
 	std::vector<VkDescriptorSetLayoutBinding> layoutBindings;
-	// dynamic uniform buffer for matrices
+	// matrices
 	layoutBindings.push_back(
 		inits::DescriptorSetLayoutBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 1, VK_SHADER_STAGE_VERTEX_BIT));
-	// uniform buffer for fragment shader
+	// scene lights and camera
 	layoutBindings.push_back(
-		inits::DescriptorSetLayoutBinding(1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_FRAGMENT_BIT));
+		inits::DescriptorSetLayoutBinding(1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_ALL));
 	// texture maps
 	layoutBindings.push_back(inits::DescriptorSetLayoutBinding(
 		2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 5, VK_SHADER_STAGE_FRAGMENT_BIT));
@@ -676,9 +680,9 @@ void Engine::CreateDescriptorSets()
 	for (uint64_t i = 0; i < Config::maxFramesInFlight; ++i)
 	{
 		VkDescriptorBufferInfo dBufferInfo =
-			inits::DescriptorBufferInfo(m_DynamicUniformBuffers[i], 0, DynamicUBO::GetSize());
+			inits::DescriptorBufferInfo(m_MatUniformBuffers[i], 0, MatrixUBO::GetSize());
 		VkDescriptorBufferInfo bufferInfo =
-			inits::DescriptorBufferInfo(m_UniformBuffers[i], 0, sizeof(UniformBufferObject));
+			inits::DescriptorBufferInfo(m_SceneUniformBuffers[i], 0, SceneUBO::GetSize());
 		std::array<VkDescriptorImageInfo, 5> textureImageInfos = {
 			inits::DescriptorImageInfo(m_TextureImageSampler, m_AlbedoTextureImageView),
 			inits::DescriptorImageInfo(m_TextureImageSampler, m_RoughnessTextureImageView),

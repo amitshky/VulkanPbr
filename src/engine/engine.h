@@ -108,10 +108,10 @@ private:
 	VkPipelineLayout m_PipelineLayout{};
 	std::vector<VkDescriptorSet> m_DescriptorSets;
 
-	std::vector<VkBuffer> m_UniformBuffers;
-	std::vector<VkDeviceMemory> m_UniformBufferMemory;
-	std::vector<VkBuffer> m_DynamicUniformBuffers;
-	std::vector<VkDeviceMemory> m_DynamicUniformBufferMemory;
+	std::vector<VkBuffer> m_SceneUniformBuffers;
+	std::vector<VkDeviceMemory> m_SceneUniformBufferMemory;
+	std::vector<VkBuffer> m_MatUniformBuffers;
+	std::vector<VkDeviceMemory> m_MatUniformBufferMemory;
 
 	// TODO: make a texture class
 	VkSampler m_TextureImageSampler;

@@ -50,7 +50,6 @@ struct Vertex
 	glm::vec3 normal{ 0.0f };
 	glm::vec2 texCoord{ 0.0f };
 	glm::vec3 tangent{ 0.0f };
-	glm::vec3 bitangent{ 0.0f };
 
 	static VkVertexInputBindingDescription GetBindingDescription()
 	{
@@ -62,9 +61,9 @@ struct Vertex
 		return bindingDesc;
 	}
 
-	static std::array<VkVertexInputAttributeDescription, 5> GetAttributeDescription()
+	static std::array<VkVertexInputAttributeDescription, 4> GetAttributeDescription()
 	{
-		std::array<VkVertexInputAttributeDescription, 5> attrDesc{};
+		std::array<VkVertexInputAttributeDescription, 4> attrDesc{};
 		// position
 		attrDesc[0].location = 0;
 		attrDesc[0].binding = 0;
@@ -85,11 +84,6 @@ struct Vertex
 		attrDesc[3].binding = 0;
 		attrDesc[3].format = VK_FORMAT_R32G32B32_SFLOAT;
 		attrDesc[3].offset = offsetof(Vertex, tangent);
-		// bitangent vector
-		attrDesc[4].location = 4;
-		attrDesc[4].binding = 0;
-		attrDesc[4].format = VK_FORMAT_R32G32B32_SFLOAT;
-		attrDesc[4].offset = offsetof(Vertex, bitangent);
 
 		return attrDesc;
 	}
@@ -97,8 +91,7 @@ struct Vertex
 	// hash function
 	bool operator==(const Vertex& other) const
 	{
-		return pos == other.pos && normal == other.normal && texCoord == other.texCoord && tangent == other.tangent
-			   && bitangent == other.bitangent;
+		return pos == other.pos && normal == other.normal && texCoord == other.texCoord && tangent == other.tangent;
 	}
 };
 
@@ -110,23 +103,25 @@ struct hash<Vertex>
 	size_t operator()(Vertex const& vertex) const
 	{
 		return ((hash<glm::vec3>()(vertex.pos) ^ (hash<glm::vec3>()(vertex.normal) << 1)) >> 1)
-			   ^ (hash<glm::vec2>()(vertex.texCoord) << 1) ^ (hash<glm::vec3>()(vertex.tangent) << 1)
-			   ^ (hash<glm::vec3>()(vertex.bitangent) << 1);
+			   ^ (hash<glm::vec2>()(vertex.texCoord) << 1) ^ (hash<glm::vec3>()(vertex.tangent) << 1);
 	}
 };
 } // namespace std
 
-struct UniformBufferObject
+struct SceneUBO
 {
 	alignas(16) glm::vec3 cameraPos;
+	alignas(16) glm::vec3 lightPos;
+	alignas(16) glm::vec3 lightColors;
+
+	[[nodiscard]] static inline uint64_t GetSize() { return sizeof(SceneUBO); }
 };
 
-struct DynamicUBO
+struct MatrixUBO
 {
 	alignas(16) glm::mat4 model;
 	alignas(16) glm::mat4 viewProj;
-	alignas(16) glm::mat4 normalMat;
+	alignas(16) glm::mat4 normal;
 
-	// NOTE: if this struct is updated don't forget to update this function as well
 	[[nodiscard]] static inline uint64_t GetSize() { return sizeof(glm::mat4) * 3ull; }
 };

@@ -104,3 +104,33 @@ target_link_libraries(
 	"${BUILD_LIB}"
 	"${Vulkan_LIBRARY}"
 )
+
+# compile shaders
+set(VKPBR_SHADER_SRC "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders")
+set(VKPBR_SHADER_BIN "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/out")
+
+file(
+	GLOB SHADERS
+	"${VKPBR_SHADER_SRC}/*.vert"
+	"${VKPBR_SHADER_SRC}/*.frag"
+)
+
+add_custom_command(
+	COMMAND
+	"${CMAKE_COMMAND}" -E make_directory "${VKPBR_SHADER_BIN}"
+	OUTPUT "${VKPBR_SHADER_BIN}"
+	COMMENT "Creating ${VKPBR_SHADER_BIN}"
+)
+
+foreach(source IN LISTS SHADERS)
+	get_filename_component(FILENAME "${source}" NAME)
+	add_custom_command(
+		COMMAND
+		"${Vulkan_GLSLC_EXECUTABLE}" "${source}" -o "${VKPBR_SHADER_BIN}/${FILENAME}.spv"
+		OUTPUT "${VKPBR_SHADER_BIN}/${FILENAME}.spv"
+		DEPENDS "${source}" "${VKPBR_SHADER_BIN}"
+		COMMENT "Compiling ${FILENAME}")
+	list(APPEND VKPBR_SPV_SHADERS "${VKPBR_SHADER_BIN}/${FILENAME}.spv")
+endforeach()
+
+add_custom_target(shaders ALL DEPENDS ${VKPBR_SPV_SHADERS})

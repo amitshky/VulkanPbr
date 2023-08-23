@@ -1,3 +1,3 @@
 @echo off
-call scripts/compileShaders.bat;
+@REM call scripts/compileShaders.bat;
 cmake --build build

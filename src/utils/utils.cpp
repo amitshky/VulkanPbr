@@ -536,7 +536,6 @@ void CalcTangentVectors(std::vector<Vertex>& vertices)
 	for (int32_t i = 0; i < vertices.size(); i += 3)
 	{
 		glm::vec3 tangent{};
-		glm::vec3 bitangent{};
 		glm::vec3 edge1 = vertices[i + 1].pos - vertices[i].pos;
 		glm::vec3 edge2 = vertices[i + 2].pos - vertices[i].pos;
 		glm::vec2 deltaUV1 = vertices[i + 1].texCoord - vertices[i].texCoord;
@@ -548,17 +547,9 @@ void CalcTangentVectors(std::vector<Vertex>& vertices)
 		tangent.y = f * (deltaUV2.y * edge1.y - deltaUV1.y * edge2.y);
 		tangent.z = f * (deltaUV2.y * edge1.z - deltaUV1.y * edge2.z);
 
-		bitangent.x = f * (-deltaUV2.x * edge1.x + deltaUV1.x * edge2.x);
-		bitangent.y = f * (-deltaUV2.x * edge1.y + deltaUV1.x * edge2.y);
-		bitangent.z = f * (-deltaUV2.x * edge1.z + deltaUV1.x * edge2.z);
-
 		vertices[i + 0].tangent = tangent;
 		vertices[i + 1].tangent = tangent;
 		vertices[i + 2].tangent = tangent;
-
-		vertices[i + 0].bitangent = bitangent;
-		vertices[i + 1].bitangent = bitangent;
-		vertices[i + 2].bitangent = bitangent;
 	}
 }
 
