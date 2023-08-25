@@ -7,10 +7,10 @@
 #include "core/input.h"
 
 // initial values
-constexpr glm::vec3 g_CameraPos = glm::vec3(0.0f, 0.0f, 3.0f);
-constexpr glm::vec3 g_CameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
-constexpr glm::vec3 g_CameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
-constexpr glm::vec3 g_Target = glm::vec3(0.0f, 0.0f, 0.0f);
+constexpr glm::vec3 g_CameraPos{ 0.0f, 0.0f, 3.0f };
+constexpr glm::vec3 g_CameraFront{ 0.0f, 0.0f, -1.0f };
+constexpr glm::vec3 g_CameraUp{ 0.0f, 1.0f, 0.0f };
+constexpr glm::vec3 g_Target{ 0.0f, 0.0f, 0.0f };
 constexpr float g_Yaw = -90.0f;
 constexpr float g_Pitch = 0.0f;
 constexpr float g_FOVy = glm::radians(45.0f);
@@ -38,15 +38,15 @@ Camera::Camera(float aspectRatio)
 
 void Camera::OnUpdate(float deltatime)
 {
-	ImGuiIO& io = ImGui::GetIO();
-	if (io.WantCaptureKeyboard)
-		return;
-
 	m_ViewMatrix = glm::lookAt(m_CameraPos, m_CameraPos + m_CameraFront, m_CameraUp);
 	m_ProjectionMatrix = glm::perspective(m_FOVy, m_AspectRatio, m_ZNear, m_ZFar);
 	// glm was designed for opengl where the y-coord for clip coordinate is flipped
 	m_ProjectionMatrix[1][1] *= -1;
 	m_ViewProjectionMatrix = m_ProjectionMatrix * m_ViewMatrix;
+
+	ImGuiIO& io = ImGui::GetIO();
+	if (io.WantCaptureKeyboard)
+		return;
 
 	// movement
 	const float cameraSpeed = 3.0f * (deltatime / 1000.0f);
