@@ -8,8 +8,8 @@ set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT $
 
 
 # project options
-option(VKPBR_USE_PRE_BUILT_LIB "Use pre-built libraries" OFF)
-option(VKPBR_ENABLE_CLANG_TIDY_CHECK "Enables clang-tidy check during build" OFF)
+option(VKPBR_USE_PRE_BUILT_LIB "Use pre-built libraries" ON)
+option(VKPBR_ENABLE_CLANG_TIDY_CHECK "Enables clang-tidy check during build" OFF) # .clang-tidy required
 
 # GLFW options
 option(GLFW_BUILD_EXAMPLES "Build the GLFW example programs" OFF)
@@ -35,15 +35,17 @@ if(GIT_FOUND AND EXISTS "${PROJECT_SOURCE_DIR}/.git")
 endif()
 
 
+set(LINUX FALSE)
+if(UNIX AND NOT APPLE)
+	set(LINUX TRUE)
+endif()
+
+
 add_subdirectory(src)
 if (NOT ${VKPBR_USE_PRE_BUILT_LIB})
 	add_subdirectory(lib)
 endif()
 
-
-if(UNIX AND NOT APPLE)
-	set(LINUX TRUE)
-endif()
 
 if(MSVC)
 	target_compile_options(${PROJECT_NAME} PUBLIC "/W4;/analyze;/MP;")
@@ -82,28 +84,11 @@ target_include_directories(
 	"${Vulkan_INCLUDE_DIR}"
 )
 
-
-set(
-	DEBUG_BUILD_LIB
-	"${CMAKE_SOURCE_DIR}/binaries/glfw3.lib"
-	"${CMAKE_SOURCE_DIR}/binaries/imgui.lib"
-	"${CMAKE_SOURCE_DIR}/binaries/spdlogd.lib"
-)
-set(
-	RELEASE_BUILD_LIB
-	"${CMAKE_SOURCE_DIR}/binaries/glfw3.lib"
-	"${CMAKE_SOURCE_DIR}/binaries/imgui.lib"
-	"${CMAKE_SOURCE_DIR}/binaries/spdlog.lib"
-)
-
-
-if(CMAKE_BUILD_TYPE MATCHES Debug AND ${VKPBR_USE_PRE_BUILT_LIB})
-	set(BUILD_LIB ${DEBUG_BUILD_LIB})
-elseif(CMAKE_BUILD_TYPE MATCHES Release AND ${VKPBR_USE_PRE_BUILT_LIB})
-	set(BUILD_LIB ${RELEASE_BUILD_LIB})
+if(${VKPBR_USE_PRE_BUILT_LIB})
+	file(GLOB_RECURSE PRE_BUILD_LIB "${CMAKE_SOURCE_DIR}/binaries/${CMAKE_BUILD_TYPE}/*.lib")
 else()
 	set(
-		BUILD_LIB
+		PRE_BUILD_LIB
 
 		glfw
 		spdlog::spdlog
@@ -113,7 +98,7 @@ endif()
 
 target_link_libraries(
 	${PROJECT_NAME}
-	"${BUILD_LIB}"
+	"${PRE_BUILD_LIB}"
 	"${Vulkan_LIBRARY}"
 )
 
