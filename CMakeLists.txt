@@ -19,6 +19,22 @@ option(GLFW_INSTALL "Generate installation target" OFF)
 option(GLFW_DOCUMENT_INTERNALS "Include internals in documentation" OFF)
 
 
+# Update submodules as needed
+find_package(Git QUIET)
+if(GIT_FOUND AND EXISTS "${PROJECT_SOURCE_DIR}/.git")
+	option(GIT_SUBMODULE "Check submodules during build" ON)
+	if(GIT_SUBMODULE)
+		message(STATUS "Submodule update")
+		execute_process(COMMAND ${GIT_EXECUTABLE} submodule update --init --recursive
+						WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+						RESULT_VARIABLE GIT_SUBMOD_RESULT)
+		if(NOT GIT_SUBMOD_RESULT EQUAL "0")
+			message(FATAL_ERROR "git submodule update --init --recursive failed with ${GIT_SUBMOD_RESULT}, please checkout submodules")
+		endif()
+	endif()
+endif()
+
+
 add_subdirectory(src)
 if (NOT ${VKPBR_USE_PRE_BUILT_LIB})
 	add_subdirectory(lib)
@@ -32,13 +48,9 @@ endif()
 if(MSVC)
 	target_compile_options(${PROJECT_NAME} PUBLIC "/W4;/analyze;/MP;")
 elseif(GNU OR Clang)
-	set(GCC_CLANG_COMPILE_OPTIONS "-Wall;-Wextra;-Wpedantic;-Wconversion;-Wshadow;")
-	set(GCC_CLANG_COMPILE_OPTIONS_DEBUG "-O0;-g;")
-	set(GCC_CLANG_COMPILE_OPTIONS_RELEASE "-O3;")
-
-	target_compile_options(${PROJECT_NAME} PUBLIC ${GCC_CLANG_COMPILE_OPTIONS})
-	target_compile_options(${PROJECT_NAME} PUBLIC $<$<CONFIG:Debug>:${GCC_CLANG_COMPILE_OPTIONS_DEBUG}>)
-	target_compile_options(${PROJECT_NAME} PUBLIC $<$<CONFIG:Release>:${GCC_CLANG_COMPILE_OPTIONS_RELEASE}>)
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS};-Wall;-Wextra;-Wpedantic;-Wconversion;-Wshadow;")
+	set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG};-O0;-g;")
+	set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE};-O3;")
 
 	if(LINUX)
 		target_link_libraries(${PROJECT_NAME} pthreads)
@@ -104,6 +116,7 @@ target_link_libraries(
 	"${BUILD_LIB}"
 	"${Vulkan_LIBRARY}"
 )
+
 
 # compile shaders
 set(VKPBR_SHADER_SRC "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders")

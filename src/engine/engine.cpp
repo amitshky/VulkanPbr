@@ -628,9 +628,6 @@ void Engine::CreateDescriptorSetLayout()
 	// texture maps
 	layoutBindings.push_back(inits::DescriptorSetLayoutBinding(
 		2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 5, VK_SHADER_STAGE_FRAGMENT_BIT));
-	// light pos
-	layoutBindings.push_back(
-		inits::DescriptorSetLayoutBinding(3, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 4, VK_SHADER_STAGE_ALL_GRAPHICS));
 
 	VkDescriptorSetLayoutCreateInfo descriptorSetLayoutInfo{};
 	descriptorSetLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
