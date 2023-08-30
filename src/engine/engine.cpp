@@ -533,10 +533,12 @@ void Engine::CreateColorResource()
 		m_SwapchainExtent.width,
 		m_SwapchainExtent.height,
 		miplevels,
+		1,
 		m_Device->GetMsaaSamples(),
 		colorFormat,
 		VK_IMAGE_TILING_OPTIMAL,
 		VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+		0,
 		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
 		m_ColorImage,
 		m_ColorImageMemory);
@@ -554,10 +556,12 @@ void Engine::CreateDepthResource()
 		m_SwapchainExtent.width,
 		m_SwapchainExtent.height,
 		miplevels,
+		1,
 		m_Device->GetMsaaSamples(),
 		depthFormat,
 		VK_IMAGE_TILING_OPTIMAL,
 		VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
+		0,
 		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
 		m_DepthImage,
 		m_DepthImageMemory);
@@ -869,10 +873,12 @@ void Engine::CreateTextureImage(const char* texturePath,
 		width,
 		height,
 		miplevels,
+		1,
 		VK_SAMPLE_COUNT_1_BIT,
 		format,
 		VK_IMAGE_TILING_OPTIMAL,
 		VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+		0,
 		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
 		textureImage,
 		textureImageMem);
@@ -916,6 +922,80 @@ void Engine::CreateTextureSampler()
 
 	ErrCheck(vkCreateSampler(m_Device->GetDevice(), &samplerInfo, nullptr, &m_TextureImageSampler) != VK_SUCCESS,
 		"Failed to create texture sampler!");
+}
+
+void Engine::CreateCubemap(const std::array<const char*, 6>& cubemapPaths,
+	VkImage& cubemapImage,
+	VkDeviceMemory& cubemapImageMem,
+	VkFormat format,
+	uint32_t& miplevels)
+{
+	// width, height, and channels should be the same for all 6 images
+	int32_t width = 0;
+	int32_t height = 0;
+	int32_t channels = 0;
+	constexpr int32_t numImages = 6;
+
+	stbi_uc* imageData[numImages]{};
+
+	for (int32_t i = 0; i < numImages; ++i)
+	{
+		imageData[i] = stbi_load(cubemapPaths[i], &width, &height, &channels, STBI_rgb_alpha);
+		ErrCheck(!imageData, "Unable to load texture: \"{}\"", cubemapPaths[i]);
+	}
+
+	uint64_t imageSize = static_cast<uint64_t>(width) * static_cast<uint64_t>(height) * 4;
+	VkDeviceSize bufferSize = imageSize * numImages;
+	miplevels = 1;
+
+	VkBuffer stagingBuffer = nullptr;
+	VkDeviceMemory stagingBufferMem = nullptr;
+	utils::CreateBuffer(m_Device,
+		bufferSize,
+		VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+		stagingBuffer,
+		stagingBufferMem);
+
+	for (uint64_t i = 0; i < numImages; ++i)
+	{
+		void* data = nullptr;
+		vkMapMemory(m_Device->GetDevice(), stagingBufferMem, imageSize * i, imageSize, 0, &data);
+		memcpy(data, imageData[i], imageSize);
+		vkUnmapMemory(m_Device->GetDevice(), stagingBufferMem);
+
+		stbi_image_free(imageData[i]);
+	}
+
+
+	utils::CreateImage(m_Device,
+		width,
+		height,
+		miplevels,
+		numImages,
+		VK_SAMPLE_COUNT_1_BIT,
+		format,
+		VK_IMAGE_TILING_OPTIMAL,
+		VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+		VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT,
+		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+		cubemapImage,
+		cubemapImageMem);
+
+	utils::TransitionImageLayout(m_Device,
+		m_CommandPool,
+		cubemapImage,
+		VK_IMAGE_LAYOUT_UNDEFINED,
+		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+		miplevels);
+
+	utils::CopyBufferToImage(m_Device, m_CommandPool, stagingBuffer, cubemapImage, width, height);
+
+	// TODO: remove this, do not generate mipmaps for this
+	utils::GenerateMipmaps(m_Device, m_CommandPool, cubemapImage, format, width, height, miplevels);
+
+	vkFreeMemory(m_Device->GetDevice(), stagingBufferMem, nullptr);
+	vkDestroyBuffer(m_Device->GetDevice(), stagingBuffer, nullptr);
 }
 
 void Engine::CreateSyncObjects()

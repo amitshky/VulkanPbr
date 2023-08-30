@@ -85,10 +85,10 @@ target_include_directories(
 )
 
 if(${VKPBR_USE_PRE_BUILT_LIB})
-	file(GLOB_RECURSE PRE_BUILD_LIB "${CMAKE_SOURCE_DIR}/binaries/${CMAKE_BUILD_TYPE}/*.lib")
+	file(GLOB_RECURSE BUILD_LIB "${CMAKE_SOURCE_DIR}/binaries/${CMAKE_BUILD_TYPE}/*.lib")
 else()
 	set(
-		PRE_BUILD_LIB
+		BUILD_LIB
 
 		glfw
 		spdlog::spdlog
@@ -98,7 +98,7 @@ endif()
 
 target_link_libraries(
 	${PROJECT_NAME}
-	"${PRE_BUILD_LIB}"
+	"${BUILD_LIB}"
 	"${Vulkan_LIBRARY}"
 )
 

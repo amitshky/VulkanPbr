@@ -172,10 +172,12 @@ void CreateImage(const std::unique_ptr<Device>& device,
 	uint32_t width,
 	uint32_t height,
 	uint32_t miplevels,
+	uint32_t arrayLayers,
 	VkSampleCountFlagBits numSamples,
 	VkFormat format,
 	VkImageTiling tiling,
 	VkImageUsageFlags usage,
+	VkImageCreateFlags imageFlags,
 	VkMemoryPropertyFlags properties,
 	VkImage& image,
 	VkDeviceMemory& imageMemory)
@@ -187,14 +189,14 @@ void CreateImage(const std::unique_ptr<Device>& device,
 	imgInfo.extent.height = height;
 	imgInfo.extent.depth = 1;
 	imgInfo.mipLevels = miplevels;
-	imgInfo.arrayLayers = 1;
+	imgInfo.arrayLayers = arrayLayers;
 	imgInfo.format = format;
 	imgInfo.tiling = tiling;
 	imgInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 	imgInfo.usage = usage;
 	imgInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 	imgInfo.samples = numSamples;
-	imgInfo.flags = 0; // for sparse images
+	imgInfo.flags = imageFlags;
 
 	ErrCheck(
 		vkCreateImage(device->GetDevice(), &imgInfo, nullptr, &image) != VK_SUCCESS, "Failed to create image object!");

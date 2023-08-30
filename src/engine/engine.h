@@ -69,6 +69,12 @@ private:
 		VkFormat format,
 		uint32_t& miplevels);
 
+	void CreateCubemap(const std::array<const char*, 6>& cubemapPaths,
+		VkImage& cubemapImage,
+		VkDeviceMemory& cubemapImageMem,
+		VkFormat format,
+		uint32_t& miplevels);
+
 	void CreateSyncObjects();
 
 	// event callbacks
