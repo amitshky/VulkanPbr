@@ -888,9 +888,10 @@ void Engine::CreateTextureImage(const char* texturePath,
 		textureImage,
 		VK_IMAGE_LAYOUT_UNDEFINED,
 		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-		miplevels);
+		miplevels,
+		1);
 
-	utils::CopyBufferToImage(m_Device, m_CommandPool, stagingBuffer, textureImage, width, height);
+	utils::CopyBufferToImage(m_Device, m_CommandPool, stagingBuffer, textureImage, width, height, 1);
 
 	utils::GenerateMipmaps(m_Device, m_CommandPool, textureImage, format, width, height, miplevels);
 
@@ -941,7 +942,7 @@ void Engine::CreateCubemap(const std::array<const char*, 6>& cubemapPaths,
 	for (int32_t i = 0; i < numImages; ++i)
 	{
 		imageData[i] = stbi_load(cubemapPaths[i], &width, &height, &channels, STBI_rgb_alpha);
-		ErrCheck(!imageData, "Unable to load texture: \"{}\"", cubemapPaths[i]);
+		ErrCheck(!imageData[i], "Unable to load texture: \"{}\"", cubemapPaths[i]);
 	}
 
 	uint64_t imageSize = static_cast<uint64_t>(width) * static_cast<uint64_t>(height) * 4;
@@ -987,12 +988,18 @@ void Engine::CreateCubemap(const std::array<const char*, 6>& cubemapPaths,
 		cubemapImage,
 		VK_IMAGE_LAYOUT_UNDEFINED,
 		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-		miplevels);
+		miplevels,
+		numImages);
 
-	utils::CopyBufferToImage(m_Device, m_CommandPool, stagingBuffer, cubemapImage, width, height);
+	utils::CopyBufferToImage(m_Device, m_CommandPool, stagingBuffer, cubemapImage, width, height, numImages);
 
-	// TODO: remove this, do not generate mipmaps for this
-	utils::GenerateMipmaps(m_Device, m_CommandPool, cubemapImage, format, width, height, miplevels);
+	utils::TransitionImageLayout(m_Device,
+		m_CommandPool,
+		cubemapImage,
+		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+		VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+		miplevels,
+		numImages);
 
 	vkFreeMemory(m_Device->GetDevice(), stagingBufferMem, nullptr);
 	vkDestroyBuffer(m_Device->GetDevice(), stagingBuffer, nullptr);

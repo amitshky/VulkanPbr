@@ -78,7 +78,8 @@ void CopyBufferToImage(const std::unique_ptr<Device>& device,
 	VkBuffer buffer,
 	VkImage image,
 	uint32_t width,
-	uint32_t height);
+	uint32_t height,
+	uint32_t layerCount);
 
 void GenerateMipmaps(const std::unique_ptr<Device>& device,
 	VkCommandPool commandPool,
@@ -93,7 +94,8 @@ void TransitionImageLayout(const std::unique_ptr<Device>& device,
 	VkImage image,
 	VkImageLayout oldLayout,
 	VkImageLayout newLayout,
-	uint32_t miplevels);
+	uint32_t miplevels,
+	uint32_t layerCount);
 
 
 // commands

@@ -294,7 +294,8 @@ void CopyBufferToImage(const std::unique_ptr<Device>& device,
 	VkBuffer buffer,
 	VkImage image,
 	uint32_t width,
-	uint32_t height)
+	uint32_t height,
+	uint32_t layerCount)
 {
 	VkCommandBuffer cmdBuff = BeginSingleTimeCommands(device->GetDevice(), commandPool);
 
@@ -307,7 +308,7 @@ void CopyBufferToImage(const std::unique_ptr<Device>& device,
 	region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 	region.imageSubresource.mipLevel = 0;
 	region.imageSubresource.baseArrayLayer = 0;
-	region.imageSubresource.layerCount = 1;
+	region.imageSubresource.layerCount = layerCount;
 	// part of the image to copy to
 	region.imageOffset = { 0, 0, 0 };
 	region.imageExtent = { width, height, 1 };
@@ -450,7 +451,8 @@ void TransitionImageLayout(const std::unique_ptr<Device>& device,
 	VkImage image,
 	VkImageLayout oldLayout,
 	VkImageLayout newLayout,
-	uint32_t miplevels)
+	uint32_t miplevels,
+	uint32_t layerCount)
 {
 	VkCommandBuffer cmdBuff = BeginSingleTimeCommands(device->GetDevice(), commandPool);
 
@@ -468,7 +470,7 @@ void TransitionImageLayout(const std::unique_ptr<Device>& device,
 	barrier.subresourceRange.baseMipLevel = 0;
 	barrier.subresourceRange.levelCount = miplevels;
 	barrier.subresourceRange.baseArrayLayer = 0;
-	barrier.subresourceRange.layerCount = 1;
+	barrier.subresourceRange.layerCount = layerCount;
 	if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED && newLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL)
 	{
 		barrier.srcAccessMask = 0; // operation before the barrier
