@@ -166,6 +166,9 @@ void Engine::Cleanup()
 
 	for (uint64_t i = 0; i < Config::maxFramesInFlight; ++i)
 	{
+		vkFreeMemory(m_Device->GetDevice(), m_CubemapUniformBufferMem[i], nullptr);
+		vkDestroyBuffer(m_Device->GetDevice(), m_CubemapUniformBuffers[i], nullptr);
+
 		vkFreeMemory(m_Device->GetDevice(), m_MatUniformBufferMemory[i], nullptr);
 		vkDestroyBuffer(m_Device->GetDevice(), m_MatUniformBuffers[i], nullptr);
 
