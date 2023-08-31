@@ -123,5 +123,5 @@ struct MatrixUBO
 	alignas(16) glm::mat4 viewProj;
 	alignas(16) glm::mat4 normal;
 
-	[[nodiscard]] static inline uint64_t GetSize() { return sizeof(glm::mat4) * 3ull; }
+	[[nodiscard]] static inline uint64_t GetSize() { return sizeof(glm::mat4) * 3; }
 };

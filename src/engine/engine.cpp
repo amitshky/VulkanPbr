@@ -966,6 +966,7 @@ void Engine::CreateCubemap(const std::array<const char*, 6>& cubemapPaths,
 		vkUnmapMemory(m_Device->GetDevice(), stagingBufferMem);
 
 		stbi_image_free(imageData[i]);
+		imageData[i] = nullptr;
 	}
 
 
@@ -1003,6 +1004,44 @@ void Engine::CreateCubemap(const std::array<const char*, 6>& cubemapPaths,
 
 	vkFreeMemory(m_Device->GetDevice(), stagingBufferMem, nullptr);
 	vkDestroyBuffer(m_Device->GetDevice(), stagingBuffer, nullptr);
+}
+
+void Engine::CreateCubemapUniformBuffers()
+{
+	const VkDeviceSize bufferSize = MatrixUBO::GetSize();
+	m_CubemapUniformBuffers.resize(Config::maxFramesInFlight);
+	m_CubemapUniformBufferMemory.resize(Config::maxFramesInFlight);
+
+	for (uint64_t i = 0; i < Config::maxFramesInFlight; ++i)
+	{
+		utils::CreateBuffer(m_Device,
+			bufferSize,
+			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+			VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
+			m_CubemapUniformBuffers[i],
+			m_CubemapUniformBufferMemory[i]);
+	}
+}
+
+void Engine::CreateCubemapDescriptorSetLayout()
+{
+	std::vector<VkDescriptorSetLayoutBinding> layoutBindings;
+	// matrices
+	layoutBindings.push_back(
+		inits::DescriptorSetLayoutBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT));
+	// skybox textures
+	layoutBindings.push_back(inits::DescriptorSetLayoutBinding(
+		1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT));
+
+	VkDescriptorSetLayoutCreateInfo descriptorSetLayoutInfo{};
+	descriptorSetLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+	descriptorSetLayoutInfo.bindingCount = static_cast<uint32_t>(layoutBindings.size());
+	descriptorSetLayoutInfo.pBindings = layoutBindings.data();
+
+	ErrCheck(
+		vkCreateDescriptorSetLayout(m_Device->GetDevice(), &descriptorSetLayoutInfo, nullptr, &m_DescriptorSetLayout)
+			!= VK_SUCCESS,
+		"Failed to create descriptor set layout!");
 }
 
 void Engine::CreateSyncObjects()

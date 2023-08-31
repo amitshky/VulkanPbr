@@ -74,6 +74,8 @@ private:
 		VkDeviceMemory& cubemapImageMem,
 		VkFormat format,
 		uint32_t& miplevels);
+	void CreateCubemapUniformBuffers();
+	void CreateCubemapDescriptorSetLayout();
 
 	void CreateSyncObjects();
 
@@ -137,6 +139,15 @@ private:
 	VkDeviceMemory m_VertexBufferMemory{};
 	VkBuffer m_IndexBuffer{};
 	VkDeviceMemory m_IndexBufferMemory{};
+
+	// cubemap
+	std::vector<VkBuffer> m_CubemapUniformBuffers;
+	std::vector<VkDeviceMemory> m_CubemapUniformBufferMemory;
+	VkDescriptorSetLayout m_CubemapDescriptroSetLayout{};
+	std::vector<VkDescriptorSet> m_CubemapDescriptorSets;
+	VkPipelineLayout m_CubemapPipelineLayout{};
+	VkPipeline m_CubemapPipeline{};
+
 
 	// synchronization objects
 	// used to acquire swapchain images
