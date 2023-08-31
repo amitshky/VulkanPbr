@@ -559,7 +559,30 @@ void CalcTangentVectors(std::vector<Vertex>& vertices)
 	}
 }
 
-std::pair<std::vector<Vertex>, std::vector<uint32_t>> GenerateMeshData()
+std::pair<std::vector<Vertex>, std::vector<uint32_t>> GenerateVerticesAndIndices(const std::vector<Vertex>& vertices)
+{
+	// generate indices from unique vertices
+	std::unordered_map<Vertex, uint32_t> vertexLookup{};
+	std::vector<Vertex> uniqueVertices{};
+	std::vector<uint32_t> indices;
+	uint32_t i = 0;
+
+	for (const auto& vertex : vertices)
+	{
+		if (vertexLookup.count(vertex) == 0)
+		{
+			vertexLookup[vertex] = i;
+			uniqueVertices.push_back(vertex);
+			++i;
+		}
+
+		indices.push_back(vertexLookup[vertex]);
+	}
+
+	return { uniqueVertices, indices };
+}
+
+std::pair<std::vector<Vertex>, std::vector<uint32_t>> GenerateCubeData()
 {
 	std::vector<Vertex> vertices{
 		// front
@@ -613,25 +636,56 @@ std::pair<std::vector<Vertex>, std::vector<uint32_t>> GenerateMeshData()
 
 	CalcTangentVectors(vertices);
 
-	// generate indices from unique vertices
-	std::unordered_map<Vertex, uint32_t> vertexLookup{};
-	std::vector<Vertex> uniqueVertices{};
-	std::vector<uint32_t> indices;
-	uint32_t i = 0;
+	return GenerateVerticesAndIndices(vertices);
+}
 
-	for (const auto& vertex : vertices)
-	{
-		if (vertexLookup.count(vertex) == 0)
-		{
-			vertexLookup[vertex] = i;
-			uniqueVertices.push_back(vertex);
-			++i;
-		}
+std::vector<Vertex> GenerateSkyboxData()
+{
+	std::vector<Vertex> skyboxVertices{
+		{ { -1.0f, 1.0f, -1.0f } },
+		{ { -1.0f, -1.0f, -1.0f } },
+		{ { 1.0f, -1.0f, -1.0f } },
+		{ { 1.0f, -1.0f, -1.0f } },
+		{ { 1.0f, 1.0f, -1.0f } },
+		{ { -1.0f, 1.0f, -1.0f } },
 
-		indices.push_back(vertexLookup[vertex]);
-	}
+		{ { -1.0f, -1.0f, 1.0f } },
+		{ { -1.0f, -1.0f, -1.0f } },
+		{ { -1.0f, 1.0f, -1.0f } },
+		{ { -1.0f, 1.0f, -1.0f } },
+		{ { -1.0f, 1.0f, 1.0f } },
+		{ { -1.0f, -1.0f, 1.0f } },
 
-	return { uniqueVertices, indices };
+		{ { 1.0f, -1.0f, -1.0f } },
+		{ { 1.0f, -1.0f, 1.0f } },
+		{ { 1.0f, 1.0f, 1.0f } },
+		{ { 1.0f, 1.0f, 1.0f } },
+		{ { 1.0f, 1.0f, -1.0f } },
+		{ { 1.0f, -1.0f, -1.0f } },
+
+		{ { -1.0f, -1.0f, 1.0f } },
+		{ { -1.0f, 1.0f, 1.0f } },
+		{ { 1.0f, 1.0f, 1.0f } },
+		{ { 1.0f, 1.0f, 1.0f } },
+		{ { 1.0f, -1.0f, 1.0f } },
+		{ { -1.0f, -1.0f, 1.0f } },
+
+		{ { -1.0f, 1.0f, -1.0f } },
+		{ { 1.0f, 1.0f, -1.0f } },
+		{ { 1.0f, 1.0f, 1.0f } },
+		{ { 1.0f, 1.0f, 1.0f } },
+		{ { -1.0f, 1.0f, 1.0f } },
+		{ { -1.0f, 1.0f, -1.0f } },
+
+		{ { -1.0f, -1.0f, -1.0f } },
+		{ { -1.0f, -1.0f, 1.0f } },
+		{ { 1.0f, -1.0f, -1.0f } },
+		{ { 1.0f, -1.0f, -1.0f } },
+		{ { -1.0f, -1.0f, 1.0f } },
+		{ { 1.0f, -1.0f, 1.0f } },
+	};
+
+	return skyboxVertices;
 }
 
 } // namespace utils

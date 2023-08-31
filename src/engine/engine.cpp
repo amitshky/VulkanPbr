@@ -46,9 +46,9 @@ void Engine::Init(const char* title, const uint64_t width, const uint64_t height
 
 	Logger::Info("{} application initialized!", title);
 
-	const auto meshData = utils::GenerateMeshData();
-	m_Vertices = meshData.first;
-	m_Indices = meshData.second;
+	const auto cubeData = utils::GenerateCubeData();
+	m_Vertices = cubeData.first;
+	m_Indices = cubeData.second;
 
 	CreateCommandPool();
 	CreateDescriptorPool();
@@ -106,6 +106,7 @@ void Engine::Init(const char* title, const uint64_t width, const uint64_t height
 	CreateCubemapDescriptorSets();
 	CreateCubemapPipelineLayout();
 	CreateCubemapPipeline("assets/shaders/out/skybox.vert.spv", "assets/shaders/out/skybox.frag.spv");
+	CreateCubemapVertexBuffer();
 
 	CreateSyncObjects();
 
@@ -142,6 +143,8 @@ void Engine::Cleanup()
 	vkDestroyPipelineLayout(m_Device->GetDevice(), m_CubemapPipelineLayout, nullptr);
 	vkDestroyPipeline(m_Device->GetDevice(), m_CubemapPipeline, nullptr);
 	vkDestroyDescriptorSetLayout(m_Device->GetDevice(), m_CubemapDescriptorSetLayout, nullptr);
+	vkFreeMemory(m_Device->GetDevice(), m_CubemapVertexBufferMem, nullptr);
+	vkDestroyBuffer(m_Device->GetDevice(), m_CubemapVertexBuffer, nullptr);
 
 	vkDestroySampler(m_Device->GetDevice(), m_TextureImageSampler, nullptr);
 
@@ -195,9 +198,11 @@ void Engine::Draw(float deltatime)
 {
 	BeginScene();
 
-	vkCmdBindPipeline(m_ActiveCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline);
-
 	uint32_t dynamicOffset = 0;
+	VkDeviceSize offset = 0;
+
+	// cube
+	vkCmdBindPipeline(m_ActiveCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline);
 	vkCmdBindDescriptorSets(m_ActiveCommandBuffer,
 		VK_PIPELINE_BIND_POINT_GRAPHICS,
 		m_PipelineLayout,
@@ -206,18 +211,29 @@ void Engine::Draw(float deltatime)
 		&m_DescriptorSets[m_CurrentFrameIndex],
 		1,
 		&dynamicOffset);
-
-	VkDeviceSize offset = 0;
 	vkCmdBindVertexBuffers(m_ActiveCommandBuffer, 0, 1, &m_VertexBuffer, &offset);
 	vkCmdBindIndexBuffer(m_ActiveCommandBuffer, m_IndexBuffer, 0, VK_INDEX_TYPE_UINT32);
 	vkCmdDrawIndexed(m_ActiveCommandBuffer, static_cast<uint32_t>(m_Indices.size()), 1, 0, 0, 0);
 
+
+	// cubemap
+	vkCmdBindPipeline(m_ActiveCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_CubemapPipeline);
+	vkCmdBindDescriptorSets(m_ActiveCommandBuffer,
+		VK_PIPELINE_BIND_POINT_GRAPHICS,
+		m_CubemapPipelineLayout,
+		0,
+		1,
+		&m_CubemapDescriptorSets[m_CurrentFrameIndex],
+		1,
+		&dynamicOffset);
+	vkCmdBindVertexBuffers(m_ActiveCommandBuffer, 0, 1, &m_CubemapVertexBuffer, &offset);
+	vkCmdDraw(m_ActiveCommandBuffer, static_cast<uint32_t>(m_CubemapVertices.size()), 1, 0, 0);
+
 	UpdateUniformBuffers();
-
-	OnUiRender();
-	EndScene();
-
 	m_Camera->OnUpdate(deltatime);
+	OnUiRender();
+
+	EndScene();
 }
 
 void Engine::UpdateUniformBuffers()
@@ -246,6 +262,15 @@ void Engine::UpdateUniformBuffers()
 		m_Device->GetDevice(), m_MatUniformBufferMemory[m_CurrentFrameIndex], 0, MatrixUBO::GetSize(), 0, &data);
 	memcpy(data, &mat, MatrixUBO::GetSize());
 	vkUnmapMemory(m_Device->GetDevice(), m_MatUniformBufferMemory[m_CurrentFrameIndex]);
+
+	// cubemap
+	mat.viewProj =
+		m_Camera->GetProjectionMatrix()
+		* glm::mat4(glm::mat3(m_Camera->GetViewMatrix())); // remove the translation component from the view matrix
+	vkMapMemory(
+		m_Device->GetDevice(), m_CubemapUniformBufferMem[m_CurrentFrameIndex], 0, MatrixUBO::GetSize(), 0, &data);
+	memcpy(data, &mat, MatrixUBO::GetSize());
+	vkUnmapMemory(m_Device->GetDevice(), m_CubemapUniformBufferMem[m_CurrentFrameIndex]);
 }
 
 void Engine::BeginScene()
@@ -641,6 +666,9 @@ void Engine::CreateUniformBuffers()
 	m_MatUniformBuffers.resize(Config::maxFramesInFlight);
 	m_MatUniformBufferMemory.resize(Config::maxFramesInFlight);
 
+	m_CubemapUniformBuffers.resize(Config::maxFramesInFlight);
+	m_CubemapUniformBufferMem.resize(Config::maxFramesInFlight);
+
 	for (uint64_t i = 0; i < Config::maxFramesInFlight; ++i)
 	{
 		utils::CreateBuffer(m_Device,
@@ -656,6 +684,13 @@ void Engine::CreateUniformBuffers()
 			VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
 			m_MatUniformBuffers[i],
 			m_MatUniformBufferMemory[i]);
+
+		utils::CreateBuffer(m_Device,
+			dBufferSize,
+			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+			VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
+			m_CubemapUniformBuffers[i],
+			m_CubemapUniformBufferMem[i]);
 	}
 }
 
@@ -1088,7 +1123,7 @@ void Engine::CreateCubemapDescriptorSets()
 	for (uint64_t i = 0; i < Config::maxFramesInFlight; ++i)
 	{
 		VkDescriptorBufferInfo dBufferInfo =
-			inits::DescriptorBufferInfo(m_MatUniformBuffers[i], 0, MatrixUBO::GetSize());
+			inits::DescriptorBufferInfo(m_CubemapUniformBuffers[i], 0, MatrixUBO::GetSize());
 		VkDescriptorImageInfo cubemapImageInfos = inits::DescriptorImageInfo(m_TextureImageSampler, m_CubemapImageView);
 
 		std::vector<VkWriteDescriptorSet> descWrites;
@@ -1177,6 +1212,38 @@ void Engine::CreateCubemapPipeline(const char* vertShaderPath, const char* fragS
 				 m_Device->GetDevice(), VK_NULL_HANDLE, 1, &graphicsPipelineInfo, nullptr, &m_CubemapPipeline)
 				 != VK_SUCCESS,
 		"Failed to create graphics pipeline!");
+}
+
+void Engine::CreateCubemapVertexBuffer()
+{
+	m_CubemapVertices = utils::GenerateSkyboxData();
+	VkDeviceSize size = sizeof(m_CubemapVertices[0]) * m_CubemapVertices.size();
+
+	VkBuffer stagingBuffer = nullptr;
+	VkDeviceMemory stagingBufferMemory = nullptr;
+	utils::CreateBuffer(m_Device,
+		size,
+		VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+		stagingBuffer,
+		stagingBufferMemory);
+
+	void* data = nullptr;
+	vkMapMemory(m_Device->GetDevice(), stagingBufferMemory, 0, size, 0, &data);
+	memcpy(data, m_CubemapVertices.data(), size);
+	vkUnmapMemory(m_Device->GetDevice(), stagingBufferMemory);
+
+	utils::CreateBuffer(m_Device,
+		size,
+		VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+		m_CubemapVertexBuffer,
+		m_CubemapVertexBufferMem);
+
+	utils::CopyBuffer(m_Device, m_CommandPool, stagingBuffer, m_CubemapVertexBuffer, size);
+
+	vkFreeMemory(m_Device->GetDevice(), stagingBufferMemory, nullptr);
+	vkDestroyBuffer(m_Device->GetDevice(), stagingBuffer, nullptr);
 }
 
 void Engine::CreateSyncObjects()

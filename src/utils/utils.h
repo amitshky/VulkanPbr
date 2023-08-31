@@ -109,6 +109,8 @@ void EndSingleTimeCommands(VkCommandBuffer cmdBuff,
 
 
 void CalcTangentVectors(std::vector<Vertex>& vertices);
-std::pair<std::vector<Vertex>, std::vector<uint32_t>> GenerateMeshData();
+std::pair<std::vector<Vertex>, std::vector<uint32_t>> GenerateVerticesAndIndices(const std::vector<Vertex>& vertices);
+std::pair<std::vector<Vertex>, std::vector<uint32_t>> GenerateCubeData();
+std::vector<Vertex> GenerateSkyboxData();
 
 } // namespace utils

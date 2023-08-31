@@ -80,6 +80,7 @@ private:
 	void CreateCubemapDescriptorSets();
 	void CreateCubemapPipelineLayout();
 	void CreateCubemapPipeline(const char* vertShaderPath, const char* fragShaderPath);
+	void CreateCubemapVertexBuffer();
 
 	void CreateSyncObjects();
 
@@ -145,13 +146,18 @@ private:
 	VkDeviceMemory m_IndexBufferMemory{};
 
 	// cubemap
-	VkImage m_CubemapImage;
-	VkImageView m_CubemapImageView;
-	VkDeviceMemory m_CubemapImageMem;
+	std::vector<Vertex> m_CubemapVertices;
+	VkImage m_CubemapImage{};
+	VkImageView m_CubemapImageView{};
+	VkDeviceMemory m_CubemapImageMem{};
+	std::vector<VkBuffer> m_CubemapUniformBuffers{};
+	std::vector<VkDeviceMemory> m_CubemapUniformBufferMem{};
 	VkDescriptorSetLayout m_CubemapDescriptorSetLayout{};
 	std::vector<VkDescriptorSet> m_CubemapDescriptorSets;
 	VkPipelineLayout m_CubemapPipelineLayout{};
 	VkPipeline m_CubemapPipeline{};
+	VkBuffer m_CubemapVertexBuffer{};
+	VkDeviceMemory m_CubemapVertexBufferMem{};
 
 
 	// synchronization objects
