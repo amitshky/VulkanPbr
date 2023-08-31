@@ -57,8 +57,9 @@ VkCommandPoolCreateInfo CommandPoolCreateInfo(const QueueFamilyIndices& queueInd
 	return info;
 }
 
-VkDescriptorPoolCreateInfo
-	DescriptorPoolCreateInfo(VkDescriptorPoolSize* poolSizes, const uint32_t poolSizeCount, uint32_t maxSets)
+VkDescriptorPoolCreateInfo DescriptorPoolCreateInfo(VkDescriptorPoolSize* poolSizes,
+	const uint32_t poolSizeCount,
+	uint32_t maxSets)
 {
 	VkDescriptorPoolCreateInfo info{};
 	info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
@@ -281,13 +282,14 @@ VkPipelineMultisampleStateCreateInfo PipelineMultisampleStateCreateInfo(VkBool32
 }
 
 VkPipelineDepthStencilStateCreateInfo PipelineDepthStencilStateCreateInfo(VkBool32 depthTestEnable,
-	VkBool32 depthWriteEnable)
+	VkBool32 depthWriteEnable,
+	VkCompareOp depthCompareOp)
 {
 	VkPipelineDepthStencilStateCreateInfo info{};
 	info.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
 	info.depthTestEnable = depthTestEnable;
 	info.depthWriteEnable = depthWriteEnable;
-	info.depthCompareOp = VK_COMPARE_OP_LESS;
+	info.depthCompareOp = depthCompareOp;
 	info.depthBoundsTestEnable = VK_FALSE;
 	info.minDepthBounds = 0.0f;
 	info.maxDepthBounds = 1.0f;

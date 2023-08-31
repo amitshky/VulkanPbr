@@ -21,8 +21,9 @@ void DestroyDebugUtilsMessengerEXT(VkInstance instance,
 // resource pools
 VkCommandPoolCreateInfo CommandPoolCreateInfo(const QueueFamilyIndices& queueIndices);
 
-VkDescriptorPoolCreateInfo
-	DescriptorPoolCreateInfo(VkDescriptorPoolSize* poolSizes, const uint32_t poolSizeCount, uint32_t maxSets);
+VkDescriptorPoolCreateInfo DescriptorPoolCreateInfo(VkDescriptorPoolSize* poolSizes,
+	const uint32_t poolSizeCount,
+	uint32_t maxSets);
 
 
 // render pass
@@ -89,7 +90,8 @@ VkPipelineMultisampleStateCreateInfo PipelineMultisampleStateCreateInfo(VkBool32
 	float minSampleShading);
 
 VkPipelineDepthStencilStateCreateInfo PipelineDepthStencilStateCreateInfo(VkBool32 depthTestEnable,
-	VkBool32 depthWriteEnable);
+	VkBool32 depthWriteEnable,
+	VkCompareOp depthCompareOp);
 
 VkPipelineColorBlendStateCreateInfo PipelineColorBlendStateCreateInfo(
 	const VkPipelineColorBlendAttachmentState& colorBlendAttachment);

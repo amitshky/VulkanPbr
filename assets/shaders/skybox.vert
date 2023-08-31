@@ -19,5 +19,6 @@ layout(location = 0) out vec3 outTexCoords;
 void main()
 {
 	outTexCoords = aPosition;
-	gl_Position = uMat.viewProj * vec4(aPosition, 1.0);
+	vec4 pos = uMat.viewProj * vec4(aPosition, 1.0);
+	gl_Position = pos.xyww;
 }

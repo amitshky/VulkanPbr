@@ -92,7 +92,7 @@ void Engine::Init(const char* title, const uint64_t width, const uint64_t height
 
 	CreatePipeline("assets/shaders/out/normalMapInvTBN.vert.spv", "assets/shaders/out/normalMapInvTBN.frag.spv");
 
-	// cubemap
+	// skybox
 	std::array<const char*, 6> cubemapPaths{
 		"assets/textures/skybox/right.jpg",
 		"assets/textures/skybox/left.jpg",
@@ -136,7 +136,7 @@ void Engine::Cleanup()
 		vkDestroyFence(m_Device->GetDevice(), m_InFlightFences[i], nullptr);
 	}
 
-	// cubemap
+	// skybox
 	vkDestroyImage(m_Device->GetDevice(), m_CubemapImage, nullptr);
 	vkFreeMemory(m_Device->GetDevice(), m_CubemapImageMem, nullptr);
 	vkDestroyImageView(m_Device->GetDevice(), m_CubemapImageView, nullptr);
@@ -216,7 +216,7 @@ void Engine::Draw(float deltatime)
 	vkCmdDrawIndexed(m_ActiveCommandBuffer, static_cast<uint32_t>(m_Indices.size()), 1, 0, 0, 0);
 
 
-	// cubemap
+	// skybox // draw skybox at the last
 	vkCmdBindPipeline(m_ActiveCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_CubemapPipeline);
 	vkCmdBindDescriptorSets(m_ActiveCommandBuffer,
 		VK_PIPELINE_BIND_POINT_GRAPHICS,
@@ -263,7 +263,7 @@ void Engine::UpdateUniformBuffers()
 	memcpy(data, &mat, MatrixUBO::GetSize());
 	vkUnmapMemory(m_Device->GetDevice(), m_MatUniformBufferMemory[m_CurrentFrameIndex]);
 
-	// cubemap
+	// skybox
 	mat.viewProj =
 		m_Camera->GetProjectionMatrix()
 		* glm::mat4(glm::mat3(m_Camera->GetViewMatrix())); // remove the translation component from the view matrix
@@ -796,7 +796,7 @@ void Engine::CreatePipeline(const char* vertShaderPath, const char* fragShaderPa
 	const VkPipelineMultisampleStateCreateInfo multisampleStateInfo =
 		inits::PipelineMultisampleStateCreateInfo(VK_TRUE, m_Device->GetMsaaSamples(), 0.2f);
 	const VkPipelineDepthStencilStateCreateInfo depthStencilStateInfo =
-		inits::PipelineDepthStencilStateCreateInfo(VK_TRUE, VK_TRUE);
+		inits::PipelineDepthStencilStateCreateInfo(VK_TRUE, VK_TRUE, VK_COMPARE_OP_LESS);
 
 	VkPipelineColorBlendAttachmentState colorBlendAttachment{};
 	colorBlendAttachment.colorWriteMask =
@@ -1174,7 +1174,9 @@ void Engine::CreateCubemapPipeline(const char* vertShaderPath, const char* fragS
 	const VkPipelineMultisampleStateCreateInfo multisampleStateInfo =
 		inits::PipelineMultisampleStateCreateInfo(VK_TRUE, m_Device->GetMsaaSamples(), 0.2f);
 	const VkPipelineDepthStencilStateCreateInfo depthStencilStateInfo =
-		inits::PipelineDepthStencilStateCreateInfo(VK_TRUE, VK_TRUE);
+		inits::PipelineDepthStencilStateCreateInfo(VK_TRUE,
+			VK_TRUE,
+			VK_COMPARE_OP_LESS_OR_EQUAL); // less or equal because the depth buffer for skybox will be filled with 1.0
 
 	VkPipelineColorBlendAttachmentState colorBlendAttachment{};
 	colorBlendAttachment.colorWriteMask =
