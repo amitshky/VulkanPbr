@@ -70,12 +70,16 @@ private:
 		uint32_t& miplevels);
 
 	void CreateCubemap(const std::array<const char*, 6>& cubemapPaths,
+		VkFormat format,
+		VkImageAspectFlags aspectFlags,
+		uint32_t& miplevels,
 		VkImage& cubemapImage,
 		VkDeviceMemory& cubemapImageMem,
-		VkFormat format,
-		uint32_t& miplevels);
-	void CreateCubemapUniformBuffers();
+		VkImageView& cubemapImageView);
 	void CreateCubemapDescriptorSetLayout();
+	void CreateCubemapDescriptorSets();
+	void CreateCubemapPipelineLayout();
+	void CreateCubemapPipeline(const char* vertShaderPath, const char* fragShaderPath);
 
 	void CreateSyncObjects();
 
@@ -141,9 +145,10 @@ private:
 	VkDeviceMemory m_IndexBufferMemory{};
 
 	// cubemap
-	std::vector<VkBuffer> m_CubemapUniformBuffers;
-	std::vector<VkDeviceMemory> m_CubemapUniformBufferMemory;
-	VkDescriptorSetLayout m_CubemapDescriptroSetLayout{};
+	VkImage m_CubemapImage;
+	VkImageView m_CubemapImageView;
+	VkDeviceMemory m_CubemapImageMem;
+	VkDescriptorSetLayout m_CubemapDescriptorSetLayout{};
 	std::vector<VkDescriptorSet> m_CubemapDescriptorSets;
 	VkPipelineLayout m_CubemapPipelineLayout{};
 	VkPipeline m_CubemapPipeline{};

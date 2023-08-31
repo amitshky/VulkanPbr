@@ -219,19 +219,21 @@ void CreateImage(const std::unique_ptr<Device>& device,
 VkImageView CreateImageView(VkDevice deviceVk,
 	VkImage image,
 	VkFormat format,
+	VkImageViewType imageViewType,
 	VkImageAspectFlags aspectFlags,
-	uint32_t miplevels)
+	uint32_t miplevels,
+	uint32_t layerCount)
 {
 	VkImageViewCreateInfo imgViewInfo{};
 	imgViewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
 	imgViewInfo.image = image;
 	imgViewInfo.format = format;
-	imgViewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+	imgViewInfo.viewType = imageViewType;
 	imgViewInfo.subresourceRange.aspectMask = aspectFlags;
 	imgViewInfo.subresourceRange.baseMipLevel = 0;
 	imgViewInfo.subresourceRange.levelCount = miplevels;
 	imgViewInfo.subresourceRange.baseArrayLayer = 0;
-	imgViewInfo.subresourceRange.layerCount = 1;
+	imgViewInfo.subresourceRange.layerCount = layerCount;
 
 	VkImageView imageView = nullptr;
 	ErrCheck(

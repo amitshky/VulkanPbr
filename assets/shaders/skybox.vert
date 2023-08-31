@@ -1,6 +1,10 @@
 #version 450 core
 
-layout(location = 0) in vec3 aPos;
+layout(location = 0) in vec3 aPosition;
+// unused
+layout(location = 1) in vec3 aNormal;
+layout(location = 2) in vec2 aTexCoords;
+layout(location = 3) in vec3 aTangent;
 
 layout(binding = 0) uniform MatrixUBO
 {
@@ -14,6 +18,6 @@ layout(location = 0) out vec3 outTexCoords;
 
 void main()
 {
-	outTexCoords = aPos;
-	gl_Position = uMat.viewProj * vec4(aPos, 1.0);
+	outTexCoords = aPosition;
+	gl_Position = uMat.viewProj * vec4(aPosition, 1.0);
 }

@@ -57,8 +57,10 @@ void CreateImage(const std::unique_ptr<Device>& device,
 VkImageView CreateImageView(VkDevice deviceVk,
 	VkImage image,
 	VkFormat format,
+	VkImageViewType imageViewType,
 	VkImageAspectFlags aspectFlags,
-	uint32_t miplevels);
+	uint32_t miplevels,
+	uint32_t layerCount);
 
 void CreateBuffer(const std::unique_ptr<Device>& device,
 	VkDeviceSize size,

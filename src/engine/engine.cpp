@@ -67,6 +67,7 @@ void Engine::Init(const char* title, const uint64_t width, const uint64_t height
 
 	VkFormat format = VK_FORMAT_R8G8B8A8_UNORM;
 	VkImageAspectFlags aspectFlags = VK_IMAGE_ASPECT_COLOR_BIT;
+	uint32_t miplevels = 0; // miplevels have been generated but not used for now
 
 	CreateTextureSampler();
 
@@ -80,10 +81,9 @@ void Engine::Init(const char* title, const uint64_t width, const uint64_t height
 
 	for (int32_t i = 0; i < texturePaths.size(); ++i)
 	{
-		uint32_t miplevels = 0; // miplevels have been generated but not used for now
 		CreateTextureImage(texturePaths[i], m_TextureImages[i], m_TextureImageMems[i], format, miplevels);
-		m_TextureImageViews[i] =
-			utils::CreateImageView(m_Device->GetDevice(), m_TextureImages[i], format, aspectFlags, miplevels);
+		m_TextureImageViews[i] = utils::CreateImageView(
+			m_Device->GetDevice(), m_TextureImages[i], format, VK_IMAGE_VIEW_TYPE_2D, aspectFlags, miplevels, 1);
 	}
 
 	CreateDescriptorSetLayout();
@@ -91,6 +91,22 @@ void Engine::Init(const char* title, const uint64_t width, const uint64_t height
 	CreatePipelineLayout();
 
 	CreatePipeline("assets/shaders/out/normalMapInvTBN.vert.spv", "assets/shaders/out/normalMapInvTBN.frag.spv");
+
+	// cubemap
+	std::array<const char*, 6> cubemapPaths{
+		"assets/textures/skybox/right.jpg",
+		"assets/textures/skybox/left.jpg",
+		"assets/textures/skybox/top.jpg",
+		"assets/textures/skybox/bottom.jpg",
+		"assets/textures/skybox/front.jpg",
+		"assets/textures/skybox/back.jpg",
+	};
+	CreateCubemap(cubemapPaths, format, aspectFlags, miplevels, m_CubemapImage, m_CubemapImageMem, m_CubemapImageView);
+	CreateCubemapDescriptorSetLayout();
+	CreateCubemapDescriptorSets();
+	CreateCubemapPipelineLayout();
+	CreateCubemapPipeline("assets/shaders/out/skybox.vert.spv", "assets/shaders/out/skybox.frag.spv");
+
 	CreateSyncObjects();
 
 	m_Camera = std::make_unique<Camera>(m_AspectRatio);
@@ -118,6 +134,14 @@ void Engine::Cleanup()
 		vkDestroySemaphore(m_Device->GetDevice(), m_RenderFinishedSemaphores[i], nullptr);
 		vkDestroyFence(m_Device->GetDevice(), m_InFlightFences[i], nullptr);
 	}
+
+	// cubemap
+	vkDestroyImage(m_Device->GetDevice(), m_CubemapImage, nullptr);
+	vkFreeMemory(m_Device->GetDevice(), m_CubemapImageMem, nullptr);
+	vkDestroyImageView(m_Device->GetDevice(), m_CubemapImageView, nullptr);
+	vkDestroyPipelineLayout(m_Device->GetDevice(), m_CubemapPipelineLayout, nullptr);
+	vkDestroyPipeline(m_Device->GetDevice(), m_CubemapPipeline, nullptr);
+	vkDestroyDescriptorSetLayout(m_Device->GetDevice(), m_CubemapDescriptorSetLayout, nullptr);
 
 	vkDestroySampler(m_Device->GetDevice(), m_TextureImageSampler, nullptr);
 
@@ -441,8 +465,13 @@ void Engine::CreateSwapchainImageViews()
 
 	for (size_t i = 0; i < m_SwapchainImageViews.size(); ++i)
 	{
-		m_SwapchainImageViews[i] = utils::CreateImageView(
-			m_Device->GetDevice(), m_SwapchainImages[i], m_SwapchainImageFormat, VK_IMAGE_ASPECT_COLOR_BIT, 1);
+		m_SwapchainImageViews[i] = utils::CreateImageView(m_Device->GetDevice(),
+			m_SwapchainImages[i],
+			m_SwapchainImageFormat,
+			VK_IMAGE_VIEW_TYPE_2D,
+			VK_IMAGE_ASPECT_COLOR_BIT,
+			1,
+			1);
 	}
 }
 
@@ -543,8 +572,13 @@ void Engine::CreateColorResource()
 		m_ColorImage,
 		m_ColorImageMemory);
 
-	m_ColorImageView =
-		utils::CreateImageView(m_Device->GetDevice(), m_ColorImage, colorFormat, VK_IMAGE_ASPECT_COLOR_BIT, miplevels);
+	m_ColorImageView = utils::CreateImageView(m_Device->GetDevice(),
+		m_ColorImage,
+		colorFormat,
+		VK_IMAGE_VIEW_TYPE_2D,
+		VK_IMAGE_ASPECT_COLOR_BIT,
+		miplevels,
+		1);
 }
 
 void Engine::CreateDepthResource()
@@ -566,8 +600,13 @@ void Engine::CreateDepthResource()
 		m_DepthImage,
 		m_DepthImageMemory);
 
-	m_DepthImageView =
-		utils::CreateImageView(m_Device->GetDevice(), m_DepthImage, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT, miplevels);
+	m_DepthImageView = utils::CreateImageView(m_Device->GetDevice(),
+		m_DepthImage,
+		depthFormat,
+		VK_IMAGE_VIEW_TYPE_2D,
+		VK_IMAGE_ASPECT_DEPTH_BIT,
+		miplevels,
+		1);
 }
 
 void Engine::CreateFramebuffers()
@@ -926,10 +965,12 @@ void Engine::CreateTextureSampler()
 }
 
 void Engine::CreateCubemap(const std::array<const char*, 6>& cubemapPaths,
+	VkFormat format,
+	VkImageAspectFlags aspectFlags,
+	uint32_t& miplevels,
 	VkImage& cubemapImage,
 	VkDeviceMemory& cubemapImageMem,
-	VkFormat format,
-	uint32_t& miplevels)
+	VkImageView& cubemapImageView)
 {
 	// width, height, and channels should be the same for all 6 images
 	int32_t width = 0;
@@ -1004,23 +1045,9 @@ void Engine::CreateCubemap(const std::array<const char*, 6>& cubemapPaths,
 
 	vkFreeMemory(m_Device->GetDevice(), stagingBufferMem, nullptr);
 	vkDestroyBuffer(m_Device->GetDevice(), stagingBuffer, nullptr);
-}
 
-void Engine::CreateCubemapUniformBuffers()
-{
-	const VkDeviceSize bufferSize = MatrixUBO::GetSize();
-	m_CubemapUniformBuffers.resize(Config::maxFramesInFlight);
-	m_CubemapUniformBufferMemory.resize(Config::maxFramesInFlight);
-
-	for (uint64_t i = 0; i < Config::maxFramesInFlight; ++i)
-	{
-		utils::CreateBuffer(m_Device,
-			bufferSize,
-			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-			VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
-			m_CubemapUniformBuffers[i],
-			m_CubemapUniformBufferMemory[i]);
-	}
+	cubemapImageView = utils::CreateImageView(
+		m_Device->GetDevice(), cubemapImage, format, VK_IMAGE_VIEW_TYPE_CUBE, aspectFlags, miplevels, numImages);
 }
 
 void Engine::CreateCubemapDescriptorSetLayout()
@@ -1028,7 +1055,7 @@ void Engine::CreateCubemapDescriptorSetLayout()
 	std::vector<VkDescriptorSetLayoutBinding> layoutBindings;
 	// matrices
 	layoutBindings.push_back(
-		inits::DescriptorSetLayoutBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT));
+		inits::DescriptorSetLayoutBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 1, VK_SHADER_STAGE_VERTEX_BIT));
 	// skybox textures
 	layoutBindings.push_back(inits::DescriptorSetLayoutBinding(
 		1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT));
@@ -1038,10 +1065,118 @@ void Engine::CreateCubemapDescriptorSetLayout()
 	descriptorSetLayoutInfo.bindingCount = static_cast<uint32_t>(layoutBindings.size());
 	descriptorSetLayoutInfo.pBindings = layoutBindings.data();
 
-	ErrCheck(
-		vkCreateDescriptorSetLayout(m_Device->GetDevice(), &descriptorSetLayoutInfo, nullptr, &m_DescriptorSetLayout)
-			!= VK_SUCCESS,
+	ErrCheck(vkCreateDescriptorSetLayout(
+				 m_Device->GetDevice(), &descriptorSetLayoutInfo, nullptr, &m_CubemapDescriptorSetLayout)
+				 != VK_SUCCESS,
 		"Failed to create descriptor set layout!");
+}
+
+void Engine::CreateCubemapDescriptorSets()
+{
+	std::vector<VkDescriptorSetLayout> setLayouts{ Config::maxFramesInFlight, m_CubemapDescriptorSetLayout };
+	VkDescriptorSetAllocateInfo descriptorSetAllocInfo{};
+	descriptorSetAllocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+	descriptorSetAllocInfo.descriptorPool = m_DescriptorPool;
+	descriptorSetAllocInfo.descriptorSetCount = static_cast<uint32_t>(setLayouts.size());
+	descriptorSetAllocInfo.pSetLayouts = setLayouts.data();
+
+	m_CubemapDescriptorSets.resize(Config::maxFramesInFlight);
+	ErrCheck(vkAllocateDescriptorSets(m_Device->GetDevice(), &descriptorSetAllocInfo, m_CubemapDescriptorSets.data())
+				 != VK_SUCCESS,
+		"Failed to allocate descriptor sets!");
+
+	for (uint64_t i = 0; i < Config::maxFramesInFlight; ++i)
+	{
+		VkDescriptorBufferInfo dBufferInfo =
+			inits::DescriptorBufferInfo(m_MatUniformBuffers[i], 0, MatrixUBO::GetSize());
+		VkDescriptorImageInfo cubemapImageInfos = inits::DescriptorImageInfo(m_TextureImageSampler, m_CubemapImageView);
+
+		std::vector<VkWriteDescriptorSet> descWrites;
+		descWrites.push_back(inits::WriteDescriptorSet(
+			m_CubemapDescriptorSets[i], 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 1, &dBufferInfo, nullptr));
+		descWrites.push_back(inits::WriteDescriptorSet(
+			m_CubemapDescriptorSets[i], 1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, nullptr, &cubemapImageInfos));
+
+		vkUpdateDescriptorSets(
+			m_Device->GetDevice(), static_cast<uint32_t>(descWrites.size()), descWrites.data(), 0, nullptr);
+	}
+}
+
+void Engine::CreateCubemapPipelineLayout()
+{
+	VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
+	pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+	pipelineLayoutInfo.setLayoutCount = 1;
+	pipelineLayoutInfo.pSetLayouts = &m_CubemapDescriptorSetLayout;
+	pipelineLayoutInfo.pushConstantRangeCount = 0;
+	pipelineLayoutInfo.pPushConstantRanges = nullptr;
+
+	ErrCheck(vkCreatePipelineLayout(m_Device->GetDevice(), &pipelineLayoutInfo, nullptr, &m_CubemapPipelineLayout)
+				 != VK_SUCCESS,
+		"Failed to create pipeline layout!");
+}
+
+void Engine::CreateCubemapPipeline(const char* vertShaderPath, const char* fragShaderPath)
+{
+	// shader stages
+	const Shader vertexShader{ m_Device->GetDevice(), vertShaderPath, ShaderType::VERTEX };
+	const Shader fragmentShader{ m_Device->GetDevice(), fragShaderPath, ShaderType::FRAGMENT };
+	std::array<VkPipelineShaderStageCreateInfo, 2> shaderStages{ vertexShader.GetShaderStage(),
+		fragmentShader.GetShaderStage() };
+
+	// vertex descriptions
+	auto vertexBindingDesc = Vertex::GetBindingDescription();
+	auto vertexAttrDesc = Vertex::GetAttributeDescription();
+
+	// fixed functions
+	const VkPipelineVertexInputStateCreateInfo vertexInputInfo = inits::PipelineVertexInputStateCreateInfo(
+		1, &vertexBindingDesc, static_cast<uint32_t>(vertexAttrDesc.size()), vertexAttrDesc.data());
+	const VkPipelineInputAssemblyStateCreateInfo inputAssemblyInfo =
+		inits::PipelineInputAssemblyStateCreateInfo(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
+	const VkPipelineViewportStateCreateInfo viewportStateInfo = inits::PipelineViewportStateCreateInfo(1, 1);
+	const VkPipelineRasterizationStateCreateInfo rasterizationStateInfo =
+		inits::PipelineRasterizationStateCreateInfo(VK_CULL_MODE_NONE, VK_FRONT_FACE_COUNTER_CLOCKWISE);
+	const VkPipelineMultisampleStateCreateInfo multisampleStateInfo =
+		inits::PipelineMultisampleStateCreateInfo(VK_TRUE, m_Device->GetMsaaSamples(), 0.2f);
+	const VkPipelineDepthStencilStateCreateInfo depthStencilStateInfo =
+		inits::PipelineDepthStencilStateCreateInfo(VK_TRUE, VK_TRUE);
+
+	VkPipelineColorBlendAttachmentState colorBlendAttachment{};
+	colorBlendAttachment.colorWriteMask =
+		VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+	colorBlendAttachment.blendEnable = VK_FALSE;
+	const VkPipelineColorBlendStateCreateInfo colorBlendStateInfo =
+		inits::PipelineColorBlendStateCreateInfo(colorBlendAttachment);
+
+	// dynamic states
+	std::array<VkDynamicState, 2> dynamicStates{ VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR };
+	VkPipelineDynamicStateCreateInfo dynamicStateInfo =
+		inits::PipelineDynamicStateCreateInfo(static_cast<uint32_t>(dynamicStates.size()), dynamicStates.data());
+
+	// graphics pipeline
+	VkGraphicsPipelineCreateInfo graphicsPipelineInfo{};
+	graphicsPipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+	// config all previos objects
+	graphicsPipelineInfo.stageCount = static_cast<uint32_t>(shaderStages.size());
+	graphicsPipelineInfo.pStages = shaderStages.data();
+	graphicsPipelineInfo.pVertexInputState = &vertexInputInfo;
+	graphicsPipelineInfo.pInputAssemblyState = &inputAssemblyInfo;
+	graphicsPipelineInfo.pViewportState = &viewportStateInfo;
+	graphicsPipelineInfo.pRasterizationState = &rasterizationStateInfo;
+	graphicsPipelineInfo.pMultisampleState = &multisampleStateInfo;
+	graphicsPipelineInfo.pDepthStencilState = &depthStencilStateInfo;
+	graphicsPipelineInfo.pColorBlendState = &colorBlendStateInfo;
+	graphicsPipelineInfo.pDynamicState = &dynamicStateInfo;
+	graphicsPipelineInfo.layout = m_CubemapPipelineLayout;
+	graphicsPipelineInfo.renderPass = m_RenderPass;
+	graphicsPipelineInfo.subpass = 0; // index of subpass
+	graphicsPipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
+	graphicsPipelineInfo.basePipelineIndex = -1;
+
+	ErrCheck(vkCreateGraphicsPipelines(
+				 m_Device->GetDevice(), VK_NULL_HANDLE, 1, &graphicsPipelineInfo, nullptr, &m_CubemapPipeline)
+				 != VK_SUCCESS,
+		"Failed to create graphics pipeline!");
 }
 
 void Engine::CreateSyncObjects()
