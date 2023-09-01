@@ -58,6 +58,14 @@ python format.py
 
 ## Screenshots
 
+- PBR implementation
+
+<img src="img/pbr.png" width=450>
+
+- Skybox added
+
+<img src="img/skybox.png" width=450>
+
 
 
 ## References

@@ -218,7 +218,6 @@ void Engine::Draw(float deltatime)
 	vkCmdBindIndexBuffer(m_ActiveCommandBuffer, m_IndexBuffer, 0, VK_INDEX_TYPE_UINT32);
 	vkCmdDrawIndexed(m_ActiveCommandBuffer, static_cast<uint32_t>(m_Indices.size()), 1, 0, 0, 0);
 
-
 	// skybox // draw skybox at the last
 	vkCmdBindPipeline(m_ActiveCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_CubemapPipeline);
 	vkCmdBindDescriptorSets(m_ActiveCommandBuffer,
