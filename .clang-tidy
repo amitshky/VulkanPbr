@@ -16,7 +16,8 @@
 #   -cppcoreguidelines-avoid-c-arrays,
 # '
 
-Checks: "*,
+Checks: "
+  *,
   -abseil-*,
   -altera-*,
   -android-*,
