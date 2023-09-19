@@ -10,16 +10,8 @@
 			},
 			"problemMatcher": "$gcc",
 			"dependsOn": [
-				"Config-MSVC-Debug"
+				"Config-MSVC"
 			]
-		},
-		{
-			"type": "shell",
-			"label": "Config-MSVC-Debug",
-			"windows": {
-				"command": "scripts/config-msvc-dbg.bat"
-			},
-			"problemMatcher": "$gcc"
 		},
 		{
 			"type": "shell",
@@ -29,14 +21,14 @@
 			},
 			"problemMatcher": "$gcc",
 			"dependsOn": [
-				"Config-MSVC-Release"
+				"Config-MSVC"
 			]
 		},
 		{
 			"type": "shell",
-			"label": "Config-MSVC-Release",
+			"label": "Config-MSVC",
 			"windows": {
-				"command": "scripts/config-msvc-rel.bat"
+				"command": "scripts/config-msvc.bat"
 			},
 			"problemMatcher": "$gcc"
 		},
