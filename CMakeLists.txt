@@ -7,11 +7,6 @@ project(vulkanPbr LANGUAGES CXX)
 set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT ${PROJECT_NAME})
 
 
-if (NOT CMAKE_BUILD_TYPE:INTERNAL)
-	set(CMAKE_BUILD_TYPE "Release")
-endif()
-
-
 # project options
 option(VKPBR_USE_PRE_BUILT_LIB "Use pre-built libraries" ON)
 option(VKPBR_ENABLE_CLANG_TIDY_CHECK "Enables clang-tidy check during build" OFF) # .clang-tidy required
