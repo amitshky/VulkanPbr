@@ -49,11 +49,11 @@ python format.py
 
 
 ## Usage
-* WASD to move the camera forward, left, back, and right respectively.
-* E and Q to move the camera up and down.
+* Left-click and drag the mouse to move the camera
+* Left-click and WASD to move the camera forward, left, back, and right respectively.
+* Left-click and E and Q to move the camera up and down.
 * R to reset the camera
 * Ctrl+Q to close the window
-* Left click and drag the mouse to move the camera
 
 
 ## Screenshots
