@@ -1,6 +1,6 @@
 #include "engine/engine.h"
 
-#include "stb_image/stb_image.h"
+#include "stb_image.h"
 #include "glm/gtc/matrix_inverse.hpp"
 #include "glm/gtc/type_ptr.hpp"
 #include "core/core.h"

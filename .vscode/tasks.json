@@ -37,7 +37,7 @@
 			"type": "shell",
 			"label": "Build-Clang-Debug",
 			"windows": {
-				"command": "scripts/build-clang.bat"
+				"command": "scripts/build-clang-dbg.bat"
 			},
 			"problemMatcher": "$gcc",
 			"dependsOn": [
@@ -56,7 +56,7 @@
 			"type": "shell",
 			"label": "Build-Clang-Release",
 			"windows": {
-				"command": "scripts/build-clang.bat"
+				"command": "scripts/build-clang-rel.bat"
 			},
 			"problemMatcher": "$gcc",
 			"dependsOn": [

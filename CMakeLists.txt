@@ -18,6 +18,24 @@ option(GLFW_BUILD_DOCS "Build the GLFW documentation" OFF)
 option(GLFW_INSTALL "Generate installation target" OFF)
 option(GLFW_DOCUMENT_INTERNALS "Include internals in documentation" OFF)
 
+# Assimp options
+option(BUILD_SHARED_LIBS "Build package with shared libraries." OFF)
+option(ASSIMP_BUILD_FRAMEWORK "Build package as Mac OS X Framework bundle." OFF)
+option(ASSIMP_DOUBLE_PRECISION "Set to ON to enable double precision processing" OFF)
+option(ASSIMP_OPT_BUILD_PACKAGES "Set to ON to generate CPack configuration files and packaging targets" OFF)
+option(ASSIMP_ANDROID_JNIIOSYSTEM "Android JNI IOSystem support is active" OFF)
+option(ASSIMP_NO_EXPORT "Disable Assimp's export functionality." OFF)
+option(ASSIMP_BUILD_SAMPLES "If the official samples are built as well (need Glu)." OFF)
+option(ASSIMP_BUILD_TESTS "If the test suite for Assimp is built in addition to the library." OFF)
+option(ASSIMP_COVERALLS "Enable this to measure test coverage." OFF)
+option(ASSIMP_INSTALL "Disable this if you want to use assimp as a submodule." OFF)
+option(ASSIMP_WARNINGS_AS_ERRORS "Treat all warnings as errors." OFF)
+option(ASSIMP_ASAN "Enable AddressSanitizer." OFF)
+option(ASSIMP_UBSAN "Enable Undefined Behavior sanitizer." OFF)
+option(ASSIMP_BUILD_DOCS "Build documentation using Doxygen." OFF)
+option(ASSIMP_INJECT_DEBUG_POSTFIX "Inject debug postfix in .a/.so/.dll lib names" ON)
+option(ASSIMP_IGNORE_GIT_HASH "Don't call git to get the hash." OFF)
+
 
 # Update submodules as needed
 find_package(Git QUIET)
@@ -76,22 +94,31 @@ target_include_directories(
 	${PROJECT_NAME}
 	PUBLIC
 	"src/"
-	"lib/"
 	"lib/glm/"
 	"lib/glfw/include/"
 	"lib/spdlog/include/"
+	"lib/assimp/include/"
 	"lib/imgui/"
+	"lib/stb_image/"
 	"${Vulkan_INCLUDE_DIR}"
 )
 
 if(${VKPBR_USE_PRE_BUILT_LIB})
 	file(GLOB_RECURSE BUILD_LIB "${CMAKE_SOURCE_DIR}/binaries/${CMAKE_BUILD_TYPE}/*.lib")
+	target_include_directories(
+		${PROJECT_NAME}
+		PUBLIC
+		# assimp config headers
+		"binaries/${CMAKE_BUILD_TYPE}/include/"
+		"binaries/${CMAKE_BUILD_TYPE}/contrib/zlib/"
+	)
 else()
 	set(
 		BUILD_LIB
 
 		glfw
 		spdlog::spdlog
+		assimp
 		imgui
 	)
 endif()

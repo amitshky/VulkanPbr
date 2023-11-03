@@ -1,5 +1,6 @@
 add_subdirectory(glfw)
 add_subdirectory(spdlog)
+add_subdirectory(assimp)
 add_library(imgui
 	STATIC
 	imgui/imgui.cpp

@@ -1,7 +1,7 @@
 #include "ui/imGuiOverlay.h"
 
-#include "imgui/backends/imgui_impl_glfw.h"
-#include "imgui/backends/imgui_impl_vulkan.h"
+#include "backends/imgui_impl_glfw.h"
+#include "backends/imgui_impl_vulkan.h"
 #include "core/core.h"
 #include "engine/engine.h"
 #include "engine/initializers.h"

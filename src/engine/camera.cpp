@@ -3,7 +3,7 @@
 #include <cmath>
 #include <iostream>
 #include <glm/gtc/matrix_transform.hpp>
-#include "imgui/imgui.h"
+#include "imgui.h"
 #include "core/input.h"
 
 // initial values

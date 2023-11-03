@@ -38,7 +38,7 @@ OR (using bat scripts from `scripts` folder)
 * Run them from the root directory of the repo (NOTE: This will build with `-DVKPBR_USE_PRE_BUILT_LIB=ON`).
 ```
 ./scripts/config-clang-rel.bat
-./scripts/build-clang.bat
+./scripts/build-clang-rel.bat
 ./scripts/run-clang.bat
 ```
 
