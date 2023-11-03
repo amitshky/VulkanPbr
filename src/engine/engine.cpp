@@ -74,15 +74,15 @@ void Engine::Init(const char* title, const uint64_t width, const uint64_t height
 
 	CreateTextureSampler();
 
-	std::vector<std::string> texturePaths{
-		"assets/textures/gold/MetalGoldPaint002_COL_2K_METALNESS.png", // albedo
-		"assets/textures/gold/MetalGoldPaint002_ROUGHNESS_2K_METALNESS.png", // roughness
-		"assets/textures/gold/MetalGoldPaint002_METALNESS_2K_METALNESS.png", // metallic
-		"assets/textures/gold/MetalGoldPaint002_AO_2K_METALNESS.png", // ao
-		"assets/textures/gold/MetalGoldPaint002_NRM_2K_METALNESS.png", // normal
-	};
+	// std::vector<std::string> texturePaths{
+	// 	"assets/textures/gold/MetalGoldPaint002_COL_2K_METALNESS.png", // albedo
+	// 	"assets/textures/gold/MetalGoldPaint002_ROUGHNESS_2K_METALNESS.png", // roughness
+	// 	"assets/textures/gold/MetalGoldPaint002_METALNESS_2K_METALNESS.png", // metallic
+	// 	"assets/textures/gold/MetalGoldPaint002_AO_2K_METALNESS.png", // ao
+	// 	"assets/textures/gold/MetalGoldPaint002_NRM_2K_METALNESS.png", // normal
+	// };
 
-	// std::vector<std::string> texturePaths = model->GetTexturePaths();
+	std::vector<std::string> texturePaths = model->GetTexturePaths();
 	m_TextureImages.resize(texturePaths.size());
 	m_TextureImageViews.resize(texturePaths.size());
 	m_TextureImageMems.resize(texturePaths.size());
