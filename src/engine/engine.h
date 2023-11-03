@@ -130,9 +130,9 @@ private:
 	std::vector<VkDeviceMemory> m_LightUniformBufferMemory;
 
 	VkSampler m_TextureImageSampler;
-	std::array<VkImage, 5> m_TextureImages;
-	std::array<VkImageView, 5> m_TextureImageViews;
-	std::array<VkDeviceMemory, 5> m_TextureImageMems;
+	std::vector<VkImage> m_TextureImages;
+	std::vector<VkImageView> m_TextureImageViews;
+	std::vector<VkDeviceMemory> m_TextureImageMems;
 
 	VkPipeline m_Pipeline{};
 

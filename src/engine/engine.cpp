@@ -7,6 +7,7 @@
 #include "core/input.h"
 #include "engine/initializers.h"
 #include "engine/shader.h"
+#include "engine/model.h"
 #include "ui/imGuiOverlay.h"
 #include "utils/utils.h"
 
@@ -46,7 +47,9 @@ void Engine::Init(const char* title, const uint64_t width, const uint64_t height
 
 	Logger::Info("{} application initialized!", title);
 
-	const auto cubeData = utils::GenerateCubeData();
+	std::unique_ptr<Model> model = std::make_unique<Model>("assets/models/backpack/backpack.obj");
+	const auto cubeData = model->GetModelData();
+	// const auto cubeData = utils::GenerateCubeData();
 	m_Vertices = cubeData.first;
 	m_Indices = cubeData.second;
 
@@ -71,7 +74,7 @@ void Engine::Init(const char* title, const uint64_t width, const uint64_t height
 
 	CreateTextureSampler();
 
-	std::array<const char*, 5> texturePaths{
+	std::vector<std::string> texturePaths{
 		"assets/textures/gold/MetalGoldPaint002_COL_2K_METALNESS.png", // albedo
 		"assets/textures/gold/MetalGoldPaint002_ROUGHNESS_2K_METALNESS.png", // roughness
 		"assets/textures/gold/MetalGoldPaint002_METALNESS_2K_METALNESS.png", // metallic
@@ -79,9 +82,14 @@ void Engine::Init(const char* title, const uint64_t width, const uint64_t height
 		"assets/textures/gold/MetalGoldPaint002_NRM_2K_METALNESS.png", // normal
 	};
 
+	// std::vector<std::string> texturePaths = model->GetTexturePaths();
+	m_TextureImages.resize(texturePaths.size());
+	m_TextureImageViews.resize(texturePaths.size());
+	m_TextureImageMems.resize(texturePaths.size());
+
 	for (int32_t i = 0; i < texturePaths.size(); ++i)
 	{
-		CreateTextureImage(texturePaths[i], m_TextureImages[i], m_TextureImageMems[i], format, miplevels);
+		CreateTextureImage(texturePaths[i].c_str(), m_TextureImages[i], m_TextureImageMems[i], format, miplevels);
 		m_TextureImageViews[i] = utils::CreateImageView(
 			m_Device->GetDevice(), m_TextureImages[i], format, VK_IMAGE_VIEW_TYPE_2D, aspectFlags, miplevels, 1);
 	}
@@ -90,7 +98,8 @@ void Engine::Init(const char* title, const uint64_t width, const uint64_t height
 	CreateDescriptorSets();
 	CreatePipelineLayout();
 
-	CreatePipeline("assets/shaders/out/normalMapInvTBN.vert.spv", "assets/shaders/out/normalMapInvTBN.frag.spv");
+	CreatePipeline("assets/shaders/out/phongLighting.vert.spv", "assets/shaders/out/phongLighting.frag.spv");
+	// CreatePipeline("assets/shaders/out/normalMapInvTBN.vert.spv", "assets/shaders/out/normalMapInvTBN.frag.spv");
 
 	// skybox
 	std::array<const char*, 6> cubemapPaths{
@@ -216,7 +225,8 @@ void Engine::Draw(float deltatime)
 		&dynamicOffset);
 	vkCmdBindVertexBuffers(m_ActiveCommandBuffer, 0, 1, &m_VertexBuffer, &offset);
 	vkCmdBindIndexBuffer(m_ActiveCommandBuffer, m_IndexBuffer, 0, VK_INDEX_TYPE_UINT32);
-	vkCmdDrawIndexed(m_ActiveCommandBuffer, static_cast<uint32_t>(m_Indices.size()), 1, 0, 0, 0);
+	// vkCmdDrawIndexed(m_ActiveCommandBuffer, static_cast<uint32_t>(m_Indices.size()), 1, 0, 0, 0);
+	vkCmdDraw(m_ActiveCommandBuffer, static_cast<uint32_t>(m_Vertices.size()), 1, 0, 0);
 
 	// skybox // draw skybox at the last
 	vkCmdBindPipeline(m_ActiveCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_CubemapPipeline);
@@ -257,6 +267,7 @@ void Engine::UpdateUniformBuffers()
 	MatrixUBO mat{};
 	mat.model = glm::mat4(1.0);
 	mat.model = glm::translate(mat.model, glm::vec3(0.0f, 0.0f, 0.0f));
+	mat.model = glm::scale(mat.model, glm::vec3(0.5f));
 	mat.viewProj = m_Camera->GetViewProjectionMatrix();
 	mat.normal = glm::inverseTranspose(mat.model);
 
@@ -706,8 +717,10 @@ void Engine::CreateDescriptorSetLayout()
 	layoutBindings.push_back(
 		inits::DescriptorSetLayoutBinding(1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_ALL_GRAPHICS));
 	// texture maps
-	layoutBindings.push_back(inits::DescriptorSetLayoutBinding(
-		2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 5, VK_SHADER_STAGE_FRAGMENT_BIT));
+	layoutBindings.push_back(inits::DescriptorSetLayoutBinding(2,
+		VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+		static_cast<uint32_t>(m_TextureImages.size()),
+		VK_SHADER_STAGE_FRAGMENT_BIT));
 
 	VkDescriptorSetLayoutCreateInfo descriptorSetLayoutInfo{};
 	descriptorSetLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
@@ -740,21 +753,22 @@ void Engine::CreateDescriptorSets()
 			inits::DescriptorBufferInfo(m_MatUniformBuffers[i], 0, MatrixUBO::GetSize());
 		VkDescriptorBufferInfo bufferInfo =
 			inits::DescriptorBufferInfo(m_SceneUniformBuffers[i], 0, SceneUBO::GetSize());
-		std::array<VkDescriptorImageInfo, 5> textureImageInfos = {
-			inits::DescriptorImageInfo(m_TextureImageSampler, m_TextureImageViews[0]), // albedo
-			inits::DescriptorImageInfo(m_TextureImageSampler, m_TextureImageViews[1]), // roughness
-			inits::DescriptorImageInfo(m_TextureImageSampler, m_TextureImageViews[2]), // metallic
-			inits::DescriptorImageInfo(m_TextureImageSampler, m_TextureImageViews[3]), // ao
-			inits::DescriptorImageInfo(m_TextureImageSampler, m_TextureImageViews[4]), // normal
-		};
+
+		std::vector<VkDescriptorImageInfo> textureImageInfos;
+		for (const auto& imgView : m_TextureImageViews)
+			textureImageInfos.push_back(inits::DescriptorImageInfo(m_TextureImageSampler, imgView));
 
 		std::vector<VkWriteDescriptorSet> descWrites;
 		descWrites.push_back(inits::WriteDescriptorSet(
 			m_DescriptorSets[i], 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 1, &dBufferInfo, nullptr));
 		descWrites.push_back(inits::WriteDescriptorSet(
 			m_DescriptorSets[i], 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, &bufferInfo, nullptr));
-		descWrites.push_back(inits::WriteDescriptorSet(
-			m_DescriptorSets[i], 2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 5, nullptr, textureImageInfos.data()));
+		descWrites.push_back(inits::WriteDescriptorSet(m_DescriptorSets[i],
+			2,
+			VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+			static_cast<uint32_t>(m_TextureImages.size()),
+			nullptr,
+			textureImageInfos.data()));
 
 		vkUpdateDescriptorSets(
 			m_Device->GetDevice(), static_cast<uint32_t>(descWrites.size()), descWrites.data(), 0, nullptr);
