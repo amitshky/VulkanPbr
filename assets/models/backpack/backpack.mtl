@@ -1,7 +1,7 @@
-# Blender MTL File: 'None'
-# Material Count: 1
+# Blender 3.6.1 MTL File: 'None'
+# www.blender.org
 
-newmtl Scene_-_Root
+newmtl Material
 Ns 225.000000
 Ka 1.000000 1.000000 1.000000
 Kd 0.800000 0.800000 0.800000
@@ -10,7 +10,8 @@ Ke 0.0 0.0 0.0
 Ni 1.450000
 d 1.000000
 illum 2
-map_Kd diffuse.jpg
-map_Bump normal.png
+map_Kd albedo.jpg
+map_Pm metallic.jpg
+map_Pr roughness.jpg
+norm normal.png
 map_Ks specular.jpg
-

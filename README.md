@@ -1,4 +1,5 @@
 # vulkanPbr
+A simple PBR (Physically-based Rendering) renderer implementation in Vulkan.
 
 
 ## Prerequisites
@@ -58,14 +59,14 @@ python format.py
 
 ## Screenshots
 
-- PBR implementation
+Model loading\
+<img src="img/model.png" width=450>
 
-<img src="img/pbr.png" width=450>
-
-- Skybox added
-
+Skybox added\
 <img src="img/skybox.png" width=450>
 
+PBR implementation\
+<img src="img/pbr.png" width=450>
 
 
 ## References

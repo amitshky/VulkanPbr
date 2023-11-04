@@ -7,7 +7,6 @@
 #include "core/input.h"
 #include "engine/initializers.h"
 #include "engine/shader.h"
-#include "engine/model.h"
 #include "ui/imGuiOverlay.h"
 #include "utils/utils.h"
 
@@ -46,13 +45,6 @@ void Engine::Init(const char* title, const uint64_t width, const uint64_t height
 	m_Device = std::make_unique<Device>(m_VulkanContext->GetInstance(), m_Window->GetWindowSurface());
 
 	Logger::Info("{} application initialized!", title);
-
-	std::unique_ptr<Model> model = std::make_unique<Model>("assets/models/backpack/backpack.obj");
-	const auto cubeData = model->GetModelData();
-	// const auto cubeData = utils::GenerateCubeData();
-	m_Vertices = cubeData.first;
-	m_Indices = cubeData.second;
-
 	CreateCommandPool();
 	CreateDescriptorPool();
 
@@ -65,8 +57,9 @@ void Engine::Init(const char* title, const uint64_t width, const uint64_t height
 
 	CreateCommandBuffers();
 	CreateUniformBuffers();
-	CreateVertexBuffer();
-	CreateIndexBuffer();
+
+	bool pbr = true;
+	m_Model = std::make_unique<Model>("assets/models/backpack/backpack.obj", pbr, true);
 
 	VkFormat format = VK_FORMAT_R8G8B8A8_UNORM;
 	VkImageAspectFlags aspectFlags = VK_IMAGE_ASPECT_COLOR_BIT;
@@ -74,15 +67,7 @@ void Engine::Init(const char* title, const uint64_t width, const uint64_t height
 
 	CreateTextureSampler();
 
-	// std::vector<std::string> texturePaths{
-	// 	"assets/textures/gold/MetalGoldPaint002_COL_2K_METALNESS.png", // albedo
-	// 	"assets/textures/gold/MetalGoldPaint002_ROUGHNESS_2K_METALNESS.png", // roughness
-	// 	"assets/textures/gold/MetalGoldPaint002_METALNESS_2K_METALNESS.png", // metallic
-	// 	"assets/textures/gold/MetalGoldPaint002_AO_2K_METALNESS.png", // ao
-	// 	"assets/textures/gold/MetalGoldPaint002_NRM_2K_METALNESS.png", // normal
-	// };
-
-	std::vector<std::string> texturePaths = model->GetTexturePaths();
+	std::vector<std::string> texturePaths = m_Model->GetTexturePaths();
 	m_TextureImages.resize(texturePaths.size());
 	m_TextureImageViews.resize(texturePaths.size());
 	m_TextureImageMems.resize(texturePaths.size());
@@ -98,8 +83,10 @@ void Engine::Init(const char* title, const uint64_t width, const uint64_t height
 	CreateDescriptorSets();
 	CreatePipelineLayout();
 
-	CreatePipeline("assets/shaders/out/phongLighting.vert.spv", "assets/shaders/out/phongLighting.frag.spv");
-	// CreatePipeline("assets/shaders/out/normalMapInvTBN.vert.spv", "assets/shaders/out/normalMapInvTBN.frag.spv");
+	if (pbr)
+		CreatePipeline("assets/shaders/out/normalMapInvTBN.vert.spv", "assets/shaders/out/normalMapInvTBN.frag.spv");
+	else
+		CreatePipeline("assets/shaders/out/phongLighting.vert.spv", "assets/shaders/out/phongLighting.frag.spv");
 
 	// skybox
 	std::array<const char*, 6> cubemapPaths{
@@ -164,10 +151,7 @@ void Engine::Cleanup()
 		vkDestroyImage(m_Device->GetDevice(), m_TextureImages[i], nullptr);
 	}
 
-	vkFreeMemory(m_Device->GetDevice(), m_IndexBufferMemory, nullptr);
-	vkDestroyBuffer(m_Device->GetDevice(), m_IndexBuffer, nullptr);
-	vkFreeMemory(m_Device->GetDevice(), m_VertexBufferMemory, nullptr);
-	vkDestroyBuffer(m_Device->GetDevice(), m_VertexBuffer, nullptr);
+	m_Model->Cleanup(m_Device->GetDevice());
 
 	vkDestroyPipeline(m_Device->GetDevice(), m_Pipeline, nullptr);
 	vkDestroyPipelineLayout(m_Device->GetDevice(), m_PipelineLayout, nullptr);
@@ -213,7 +197,7 @@ void Engine::Draw(float deltatime)
 	uint32_t dynamicOffset = 0;
 	VkDeviceSize offset = 0;
 
-	// cube
+	// model
 	vkCmdBindPipeline(m_ActiveCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline);
 	vkCmdBindDescriptorSets(m_ActiveCommandBuffer,
 		VK_PIPELINE_BIND_POINT_GRAPHICS,
@@ -223,10 +207,8 @@ void Engine::Draw(float deltatime)
 		&m_DescriptorSets[m_CurrentFrameIndex],
 		1,
 		&dynamicOffset);
-	vkCmdBindVertexBuffers(m_ActiveCommandBuffer, 0, 1, &m_VertexBuffer, &offset);
-	vkCmdBindIndexBuffer(m_ActiveCommandBuffer, m_IndexBuffer, 0, VK_INDEX_TYPE_UINT32);
-	// vkCmdDrawIndexed(m_ActiveCommandBuffer, static_cast<uint32_t>(m_Indices.size()), 1, 0, 0, 0);
-	vkCmdDraw(m_ActiveCommandBuffer, static_cast<uint32_t>(m_Vertices.size()), 1, 0, 0);
+
+	m_Model->Draw(m_ActiveCommandBuffer);
 
 	// skybox // draw skybox at the last
 	vkCmdBindPipeline(m_ActiveCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_CubemapPipeline);
@@ -256,7 +238,7 @@ void Engine::UpdateUniformBuffers()
 	scene.lightPos[1] = glm::vec4(0.0f, 30.0f, 0.0f, 0.0f);
 	scene.lightPos[2] = glm::vec4(30.0f, 0.0f, 0.0f, 0.0f);
 	scene.lightPos[3] = glm::vec4(-30.0f, 0.0f, 0.0f, 0.0f);
-	scene.lightColors = glm::vec3(50.0f, 50.0f, 50.0f);
+	scene.lightColors = glm::vec3(500.0f);
 
 	void* data = nullptr;
 	vkMapMemory(
@@ -866,13 +848,15 @@ void Engine::CreateCommandBuffers()
 		"Failed to allocate command buffers!");
 }
 
-void Engine::CreateVertexBuffer()
+void Engine::CreateVertexBuffer(const std::vector<Vertex>& vertices,
+	VkBuffer& vertexBuffer,
+	VkDeviceMemory& vertexBufferMemory)
 {
-	VkDeviceSize size = sizeof(m_Vertices[0]) * m_Vertices.size();
+	VkDeviceSize size = sizeof(vertices[0]) * vertices.size();
 
 	VkBuffer stagingBuffer = nullptr;
 	VkDeviceMemory stagingBufferMemory = nullptr;
-	utils::CreateBuffer(m_Device,
+	utils::CreateBuffer(Engine::GetInstance()->m_Device,
 		size,
 		VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
 		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
@@ -880,30 +864,33 @@ void Engine::CreateVertexBuffer()
 		stagingBufferMemory);
 
 	void* data = nullptr;
-	vkMapMemory(m_Device->GetDevice(), stagingBufferMemory, 0, size, 0, &data);
-	memcpy(data, m_Vertices.data(), size);
-	vkUnmapMemory(m_Device->GetDevice(), stagingBufferMemory);
+	vkMapMemory(Engine::GetInstance()->m_Device->GetDevice(), stagingBufferMemory, 0, size, 0, &data);
+	memcpy(data, vertices.data(), size);
+	vkUnmapMemory(Engine::GetInstance()->m_Device->GetDevice(), stagingBufferMemory);
 
-	utils::CreateBuffer(m_Device,
+	utils::CreateBuffer(Engine::GetInstance()->m_Device,
 		size,
 		VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
 		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-		m_VertexBuffer,
-		m_VertexBufferMemory);
+		vertexBuffer,
+		vertexBufferMemory);
 
-	utils::CopyBuffer(m_Device, m_CommandPool, stagingBuffer, m_VertexBuffer, size);
+	utils::CopyBuffer(
+		Engine::GetInstance()->m_Device, Engine::GetInstance()->m_CommandPool, stagingBuffer, vertexBuffer, size);
 
-	vkFreeMemory(m_Device->GetDevice(), stagingBufferMemory, nullptr);
-	vkDestroyBuffer(m_Device->GetDevice(), stagingBuffer, nullptr);
+	vkFreeMemory(Engine::GetInstance()->m_Device->GetDevice(), stagingBufferMemory, nullptr);
+	vkDestroyBuffer(Engine::GetInstance()->m_Device->GetDevice(), stagingBuffer, nullptr);
 }
 
-void Engine::CreateIndexBuffer()
+void Engine::CreateIndexBuffer(const std::vector<uint32_t>& indices,
+	VkBuffer& indexBuffer,
+	VkDeviceMemory& indexBufferMemory)
 {
-	VkDeviceSize size = sizeof(m_Indices[0]) * m_Indices.size();
+	VkDeviceSize size = sizeof(indices[0]) * indices.size();
 
 	VkBuffer stagingBuffer = nullptr;
 	VkDeviceMemory stagingBufferMemory = nullptr;
-	utils::CreateBuffer(m_Device,
+	utils::CreateBuffer(Engine::GetInstance()->m_Device,
 		size,
 		VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
 		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
@@ -911,21 +898,22 @@ void Engine::CreateIndexBuffer()
 		stagingBufferMemory);
 
 	void* data = nullptr;
-	vkMapMemory(m_Device->GetDevice(), stagingBufferMemory, 0, size, 0, &data);
-	memcpy(data, m_Indices.data(), size);
-	vkUnmapMemory(m_Device->GetDevice(), stagingBufferMemory);
+	vkMapMemory(Engine::GetInstance()->m_Device->GetDevice(), stagingBufferMemory, 0, size, 0, &data);
+	memcpy(data, indices.data(), size);
+	vkUnmapMemory(Engine::GetInstance()->m_Device->GetDevice(), stagingBufferMemory);
 
-	utils::CreateBuffer(m_Device,
+	utils::CreateBuffer(Engine::GetInstance()->m_Device,
 		size,
 		VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
 		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-		m_IndexBuffer,
-		m_IndexBufferMemory);
+		indexBuffer,
+		indexBufferMemory);
 
-	utils::CopyBuffer(m_Device, m_CommandPool, stagingBuffer, m_IndexBuffer, size);
+	utils::CopyBuffer(
+		Engine::GetInstance()->m_Device, Engine::GetInstance()->m_CommandPool, stagingBuffer, indexBuffer, size);
 
-	vkFreeMemory(m_Device->GetDevice(), stagingBufferMemory, nullptr);
-	vkDestroyBuffer(m_Device->GetDevice(), stagingBuffer, nullptr);
+	vkFreeMemory(Engine::GetInstance()->m_Device->GetDevice(), stagingBufferMemory, nullptr);
+	vkDestroyBuffer(Engine::GetInstance()->m_Device->GetDevice(), stagingBuffer, nullptr);
 }
 
 void Engine::CreateTextureImage(const char* texturePath,
@@ -938,7 +926,7 @@ void Engine::CreateTextureImage(const char* texturePath,
 	int height = 0;
 	int channels = 0;
 	auto* imageData = stbi_load(texturePath, &width, &height, &channels, STBI_rgb_alpha);
-	ErrCheck(!imageData, "Unable to load texture: \"{}\"", texturePath);
+	ErrCheck(!imageData, "Unable to load texture: \"{}\"; ERROR: {}", texturePath, stbi_failure_reason());
 
 	VkDeviceSize size = static_cast<uint64_t>(width) * static_cast<uint64_t>(height) * 4;
 	miplevels = static_cast<uint32_t>(std::log2(std::max(width, height))) + 1;

@@ -9,6 +9,7 @@
 #include "engine/vulkanContext.h"
 #include "engine/device.h"
 #include "engine/camera.h"
+#include "engine/model.h"
 
 class Engine
 {
@@ -24,6 +25,13 @@ public:
 	[[nodiscard]] static inline GLFWwindow* GetWindowHandle() { return s_Instance->m_Window->GetWindowHandle(); }
 
 	void Run();
+
+	static void CreateVertexBuffer(const std::vector<Vertex>& vertices,
+		VkBuffer& vertexBuffer,
+		VkDeviceMemory& vertexBufferMemory);
+	static void CreateIndexBuffer(const std::vector<uint32_t>& indices,
+		VkBuffer& indexBuffer,
+		VkDeviceMemory& indexBufferMemory);
 
 private:
 	explicit Engine(const char* title, const uint64_t width = 1280, const uint64_t height = 720);
@@ -59,8 +67,6 @@ private:
 
 	void CreatePipeline(const char* vertShaderPath, const char* fragShaderPath);
 	void CreateCommandBuffers();
-	void CreateVertexBuffer();
-	void CreateIndexBuffer();
 
 	void CreateTextureSampler();
 	void CreateTextureImage(const char* texturePath,
@@ -135,15 +141,9 @@ private:
 	std::vector<VkDeviceMemory> m_TextureImageMems;
 
 	VkPipeline m_Pipeline{};
-
 	std::vector<VkCommandBuffer> m_CommandBuffers;
 
-	std::vector<Vertex> m_Vertices;
-	std::vector<uint32_t> m_Indices;
-	VkBuffer m_VertexBuffer{};
-	VkDeviceMemory m_VertexBufferMemory{};
-	VkBuffer m_IndexBuffer{};
-	VkDeviceMemory m_IndexBufferMemory{};
+	std::unique_ptr<Model> m_Model;
 
 	// cubemap
 	std::vector<Vertex> m_CubemapVertices;
@@ -158,7 +158,6 @@ private:
 	VkPipeline m_CubemapPipeline{};
 	VkBuffer m_CubemapVertexBuffer{};
 	VkDeviceMemory m_CubemapVertexBufferMem{};
-
 
 	// synchronization objects
 	// used to acquire swapchain images
