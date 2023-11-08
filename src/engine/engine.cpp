@@ -2,7 +2,6 @@
 
 #include "stb_image.h"
 #include "glm/gtc/matrix_inverse.hpp"
-#include "glm/gtc/type_ptr.hpp"
 #include "core/core.h"
 #include "core/input.h"
 #include "engine/initializers.h"

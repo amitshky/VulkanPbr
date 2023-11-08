@@ -6,7 +6,7 @@
 class VulkanContext
 {
 public:
-	VulkanContext(const char* title);
+	explicit VulkanContext(const char* title);
 	~VulkanContext();
 	VulkanContext(const VulkanContext&) = delete;
 	VulkanContext(VulkanContext&&) = delete;

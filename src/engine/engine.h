@@ -135,7 +135,7 @@ private:
 	std::vector<VkBuffer> m_LightUniformBuffers;
 	std::vector<VkDeviceMemory> m_LightUniformBufferMemory;
 
-	VkSampler m_TextureImageSampler;
+	VkSampler m_TextureImageSampler{};
 	std::vector<VkImage> m_TextureImages;
 	std::vector<VkImageView> m_TextureImageViews;
 	std::vector<VkDeviceMemory> m_TextureImageMems;
