@@ -85,7 +85,8 @@ void Window::CreateWindowSurface(VkInstance vulkanInstance)
 
 bool Window::IsMinimized()
 {
-	int width = 0, height = 0;
+	int width = 0;
+	int height = 0;
 	glfwGetFramebufferSize(m_WindowHandle, &width, &height);
 	return width == 0 || height == 0;
 }
