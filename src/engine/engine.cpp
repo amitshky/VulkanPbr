@@ -453,7 +453,7 @@ void Engine::CreateSwapchain()
 			m_Device->GetQueueFamilyIndices().presentFamily.value() };
 		swapchainInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
 		swapchainInfo.queueFamilyIndexCount = 2;
-		swapchainInfo.pQueueFamilyIndices = indicesArr;
+		swapchainInfo.pQueueFamilyIndices = static_cast<uint32_t*>(indicesArr);
 	}
 	else
 	{

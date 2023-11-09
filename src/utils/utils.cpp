@@ -177,7 +177,7 @@ void CreateImage(const std::unique_ptr<Device>& device,
 	VkFormat format,
 	VkImageTiling tiling,
 	VkImageUsageFlags usage,
-	VkImageCreateFlags imageFlags,
+	VkImageCreateFlags imageCreateFlags,
 	VkMemoryPropertyFlags properties,
 	VkImage& image,
 	VkDeviceMemory& imageMemory)
@@ -196,7 +196,7 @@ void CreateImage(const std::unique_ptr<Device>& device,
 	imgInfo.usage = usage;
 	imgInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 	imgInfo.samples = numSamples;
-	imgInfo.flags = imageFlags;
+	imgInfo.flags = imageCreateFlags;
 
 	ErrCheck(
 		vkCreateImage(device->GetDevice(), &imgInfo, nullptr, &image) != VK_SUCCESS, "Failed to create image object!");
