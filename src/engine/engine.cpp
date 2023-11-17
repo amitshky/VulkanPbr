@@ -287,10 +287,10 @@ void Engine::BeginScene()
 
 	// begin command buffer
 	m_ActiveCommandBuffer = m_CommandBuffers[m_CurrentFrameIndex];
-	vkResetCommandBuffer(m_CommandBuffers[m_CurrentFrameIndex], 0);
+	vkResetCommandBuffer(m_ActiveCommandBuffer, 0);
 	VkCommandBufferBeginInfo cmdBuffBeginInfo{};
 	cmdBuffBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-	ErrCheck(vkBeginCommandBuffer(m_CommandBuffers[m_CurrentFrameIndex], &cmdBuffBeginInfo) != VK_SUCCESS,
+	ErrCheck(vkBeginCommandBuffer(m_ActiveCommandBuffer, &cmdBuffBeginInfo) != VK_SUCCESS,
 		"Failed to begin recording command buffer!");
 
 	// begin render pass
@@ -326,8 +326,7 @@ void Engine::BeginScene()
 void Engine::EndScene()
 {
 	vkCmdEndRenderPass(m_ActiveCommandBuffer);
-	ErrCheck(
-		vkEndCommandBuffer(m_CommandBuffers[m_CurrentFrameIndex]) != VK_SUCCESS, "Failed to record command buffer!");
+	ErrCheck(vkEndCommandBuffer(m_ActiveCommandBuffer) != VK_SUCCESS, "Failed to record command buffer!");
 
 	std::array<VkPipelineStageFlags, 1> waitStages{ VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
 	VkSubmitInfo submitInfo{};
@@ -336,7 +335,7 @@ void Engine::EndScene()
 	submitInfo.pWaitSemaphores = &m_ImageAvailableSemaphores[m_CurrentFrameIndex];
 	submitInfo.pWaitDstStageMask = waitStages.data();
 	submitInfo.commandBufferCount = 1;
-	submitInfo.pCommandBuffers = &m_CommandBuffers[m_CurrentFrameIndex];
+	submitInfo.pCommandBuffers = &m_ActiveCommandBuffer;
 	submitInfo.signalSemaphoreCount = 1;
 	submitInfo.pSignalSemaphores = &m_RenderFinishedSemaphores[m_CurrentFrameIndex];
 
