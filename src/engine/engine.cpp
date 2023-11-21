@@ -633,7 +633,11 @@ void Engine::CreateFramebuffers()
 
 	for (size_t i = 0; i < m_SwapchainImages.size(); ++i)
 	{
-		std::array<VkImageView, 3> fbAttachments{ m_ColorImageView, m_DepthImageView, m_SwapchainImageViews[i] };
+		std::array<VkImageView, 3> fbAttachments{
+			m_ColorImageView,
+			m_DepthImageView,
+			m_SwapchainImageViews[i],
+		};
 		VkFramebufferCreateInfo framebufferInfo{};
 		framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
 		framebufferInfo.renderPass = m_RenderPass;
