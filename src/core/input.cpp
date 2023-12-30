@@ -1,7 +1,6 @@
 #include "core/input.h"
 
 #include <GLFW/glfw3.h>
-#include <cmath>
 #include "engine/engine.h"
 
 
