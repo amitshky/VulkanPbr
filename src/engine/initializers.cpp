@@ -3,15 +3,17 @@
 namespace inits {
 
 
-VkDebugUtilsMessengerCreateInfoEXT DebugMessengerCreateInfo(PFN_vkDebugUtilsMessengerCallbackEXT pfnDebugCallback)
+VkDebugUtilsMessengerCreateInfoEXT DebugMessengerCreateInfo(
+	PFN_vkDebugUtilsMessengerCallbackEXT pfnDebugCallback)
 {
 	// debug messenger provides explicit control over what kind of messages to log
 	VkDebugUtilsMessengerCreateInfoEXT info{};
 	info.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
-	info.messageSeverity =
-		VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
+	info.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT
+						   | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
 	//   | VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT;
-	info.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT
+	info.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT
+					   | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT
 					   | VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT;
 	info.pfnUserCallback = pfnDebugCallback; // call back function for debug messenger
 	info.pUserData = nullptr; // Optional
@@ -29,7 +31,8 @@ VkResult CreateDebugUtilsMessengerEXT(VkInstance instance,
 
 	// get the function pointer for creating debug utils messenger
 	// returns nullptr if the function couldn't be loaded
-	auto func = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
+	auto func = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(
+		instance, "vkCreateDebugUtilsMessengerEXT");
 	if (func != nullptr)
 		return func(instance, pCreateInfo, pAllocator, pDebugMessenger);
 	else
@@ -42,7 +45,8 @@ void DestroyDebugUtilsMessengerEXT(VkInstance instance,
 {
 	// must be destroyed before instance is destroyed
 	// so we cannot debug any issues in vkDestroyInstance
-	auto func = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT");
+	auto func = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(
+		instance, "vkDestroyDebugUtilsMessengerEXT");
 	if (func != nullptr)
 		func(instance, debugMessenger, pAllocator);
 }
@@ -169,7 +173,9 @@ VkDescriptorSetLayoutBinding DescriptorSetLayoutBinding(uint32_t binding,
 	return layoutBinding;
 }
 
-VkDescriptorBufferInfo DescriptorBufferInfo(VkBuffer buffer, VkDeviceSize offset, VkDeviceSize range)
+VkDescriptorBufferInfo DescriptorBufferInfo(VkBuffer buffer,
+	VkDeviceSize offset,
+	VkDeviceSize range)
 {
 	VkDescriptorBufferInfo info{};
 	info.buffer = buffer;
@@ -211,7 +217,8 @@ VkWriteDescriptorSet WriteDescriptorSet(VkDescriptorSet dstSet,
 
 
 // pipeline
-VkPipelineVertexInputStateCreateInfo PipelineVertexInputStateCreateInfo(uint32_t vertexBindingDescriptionCount,
+VkPipelineVertexInputStateCreateInfo PipelineVertexInputStateCreateInfo(
+	uint32_t vertexBindingDescriptionCount,
 	const VkVertexInputBindingDescription* pVertexBindingDescriptions,
 	uint32_t vertexAttributeDescriptionCount,
 	const VkVertexInputAttributeDescription* pVertexAttributeDescriptions)
@@ -226,7 +233,8 @@ VkPipelineVertexInputStateCreateInfo PipelineVertexInputStateCreateInfo(uint32_t
 	return info;
 }
 
-VkPipelineInputAssemblyStateCreateInfo PipelineInputAssemblyStateCreateInfo(VkPrimitiveTopology topology)
+VkPipelineInputAssemblyStateCreateInfo PipelineInputAssemblyStateCreateInfo(
+	VkPrimitiveTopology topology)
 {
 	VkPipelineInputAssemblyStateCreateInfo info{};
 	info.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
@@ -236,7 +244,8 @@ VkPipelineInputAssemblyStateCreateInfo PipelineInputAssemblyStateCreateInfo(VkPr
 	return info;
 }
 
-VkPipelineViewportStateCreateInfo PipelineViewportStateCreateInfo(uint32_t viewportCount, uint32_t scissorCount)
+VkPipelineViewportStateCreateInfo PipelineViewportStateCreateInfo(uint32_t viewportCount,
+	uint32_t scissorCount)
 {
 	VkPipelineViewportStateCreateInfo info{};
 	info.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
@@ -246,7 +255,8 @@ VkPipelineViewportStateCreateInfo PipelineViewportStateCreateInfo(uint32_t viewp
 	return info;
 }
 
-VkPipelineRasterizationStateCreateInfo PipelineRasterizationStateCreateInfo(VkCullModeFlags cullMode,
+VkPipelineRasterizationStateCreateInfo PipelineRasterizationStateCreateInfo(
+	VkCullModeFlags cullMode,
 	VkFrontFace frontFace)
 {
 	VkPipelineRasterizationStateCreateInfo info{};
@@ -265,7 +275,8 @@ VkPipelineRasterizationStateCreateInfo PipelineRasterizationStateCreateInfo(VkCu
 	return info;
 }
 
-VkPipelineMultisampleStateCreateInfo PipelineMultisampleStateCreateInfo(VkBool32 sampleShadingEnable,
+VkPipelineMultisampleStateCreateInfo PipelineMultisampleStateCreateInfo(
+	VkBool32 sampleShadingEnable,
 	VkSampleCountFlagBits rasterizationSamples,
 	float minSampleShading)
 {

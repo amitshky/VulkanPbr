@@ -63,6 +63,7 @@ build/
 !.vscode/c_cpp_properties.json
 
 *.code-workspace
+compile_commands.json
 
 # 3d model assets
 !assets/**/*.obj

@@ -20,9 +20,14 @@ public:
 	Engine& operator=(const Engine&) = delete;
 	Engine& operator=(Engine&&) = delete;
 
-	[[nodiscard]] static Engine* Create(const char* title, const uint64_t width = 1280, const uint64_t height = 720);
+	[[nodiscard]] static Engine* Create(const char* title,
+		const uint64_t width = 1280,
+		const uint64_t height = 720);
 	[[nodiscard]] static inline Engine* GetInstance() { return s_Instance; }
-	[[nodiscard]] static inline GLFWwindow* GetWindowHandle() { return s_Instance->m_Window->GetWindowHandle(); }
+	[[nodiscard]] static inline GLFWwindow* GetWindowHandle()
+	{
+		return s_Instance->m_Window->GetWindowHandle();
+	}
 
 	void Run();
 

@@ -23,8 +23,11 @@ void Window::Init(const WindowProps& props)
 	glfwInit();
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 
-	m_WindowHandle =
-		glfwCreateWindow(static_cast<int>(props.width), static_cast<int>(props.height), props.title, nullptr, nullptr);
+	m_WindowHandle = glfwCreateWindow(static_cast<int>(props.width),
+		static_cast<int>(props.height),
+		props.title,
+		nullptr,
+		nullptr);
 	glfwMakeContextCurrent(m_WindowHandle);
 
 	glfwSetWindowUserPointer(m_WindowHandle, reinterpret_cast<void*>(&m_Data));
@@ -49,10 +52,11 @@ void Window::Init(const WindowProps& props)
 		data->MouseEventCallback(xpos, ypos);
 	});
 
-	glfwSetMouseButtonCallback(m_WindowHandle, [](GLFWwindow* window, int button, int action, int mods) {
-		auto* data = reinterpret_cast<WindowData*>(glfwGetWindowUserPointer(window));
-		data->MouseButtonCallback(button, action, mods);
-	});
+	glfwSetMouseButtonCallback(
+		m_WindowHandle, [](GLFWwindow* window, int button, int action, int mods) {
+			auto* data = reinterpret_cast<WindowData*>(glfwGetWindowUserPointer(window));
+			data->MouseButtonCallback(button, action, mods);
+		});
 
 	glfwSetScrollCallback(m_WindowHandle, [](GLFWwindow* window, double xoffset, double yoffset) {
 		auto* data = reinterpret_cast<WindowData*>(glfwGetWindowUserPointer(window));
@@ -60,10 +64,11 @@ void Window::Init(const WindowProps& props)
 	});
 
 	// key event callbacks
-	glfwSetKeyCallback(m_WindowHandle, [](GLFWwindow* window, int key, int scancode, int action, int mods) {
-		auto* data = reinterpret_cast<WindowData*>(glfwGetWindowUserPointer(window));
-		data->KeyEventCallback(key, scancode, action, mods);
-	});
+	glfwSetKeyCallback(
+		m_WindowHandle, [](GLFWwindow* window, int key, int scancode, int action, int mods) {
+			auto* data = reinterpret_cast<WindowData*>(glfwGetWindowUserPointer(window));
+			data->KeyEventCallback(key, scancode, action, mods);
+		});
 }
 
 
@@ -79,7 +84,8 @@ void Window::DestroyWindowSurface(VkInstance vulkanInstance)
 
 void Window::CreateWindowSurface(VkInstance vulkanInstance)
 {
-	ErrCheck(glfwCreateWindowSurface(vulkanInstance, m_WindowHandle, nullptr, &m_WindowSurface) != VK_SUCCESS,
+	ErrCheck(glfwCreateWindowSurface(vulkanInstance, m_WindowHandle, nullptr, &m_WindowSurface)
+				 != VK_SUCCESS,
 		"Failed to create window surface!");
 }
 

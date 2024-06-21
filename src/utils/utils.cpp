@@ -14,7 +14,8 @@ namespace utils {
 // layer message should be aborted if true, the call is aborted with
 // `VK_ERROR_VALIDATION_FAILED_EXT` error
 VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(
-	[[maybe_unused]] VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, // to check the severity of the message
+	[[maybe_unused]] VkDebugUtilsMessageSeverityFlagBitsEXT
+		messageSeverity, // to check the severity of the message
 	[[maybe_unused]] VkDebugUtilsMessageTypeFlagsEXT messageType,
 	[[maybe_unused]] const VkDebugUtilsMessengerCallbackDataEXT*
 		pCallbackData, // contains the actual details of the message
@@ -70,9 +71,11 @@ bool CheckDeviceExtensionSupport(VkPhysicalDevice physicalDevice)
 	uint32_t extensionCount = 0;
 	vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &extensionCount, nullptr);
 	std::vector<VkExtensionProperties> availableExtensions{ extensionCount };
-	vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &extensionCount, availableExtensions.data());
+	vkEnumerateDeviceExtensionProperties(
+		physicalDevice, nullptr, &extensionCount, availableExtensions.data());
 
-	std::set<std::string> requiredExtensions{ Config::deviceExtensions.begin(), Config::deviceExtensions.end() };
+	std::set<std::string> requiredExtensions{ Config::deviceExtensions.begin(),
+		Config::deviceExtensions.end() };
 
 	for (const auto& extension : availableExtensions)
 		requiredExtensions.erase(extension.extensionName);
@@ -87,7 +90,8 @@ uint32_t FindMemoryType(VkPhysicalDeviceMemoryProperties deviceMemProperties,
 	for (uint32_t i = 0; i < deviceMemProperties.memoryTypeCount; ++i)
 	{
 		// typeFilter specifies a bit field of memory types
-		if (typeFilter & (1 << i) && (deviceMemProperties.memoryTypes[i].propertyFlags & properties) == properties)
+		if (typeFilter & (1 << i)
+			&& (deviceMemProperties.memoryTypes[i].propertyFlags & properties) == properties)
 			return i;
 	}
 
@@ -107,7 +111,8 @@ VkFormat FindSupportedFormat(const VkPhysicalDevice physicalDevice,
 
 		if (tiling == VK_IMAGE_TILING_LINEAR && (prop.linearTilingFeatures & features) == features)
 			return format;
-		else if (tiling == VK_IMAGE_TILING_OPTIMAL && (prop.optimalTilingFeatures & features) == features)
+		else if (tiling == VK_IMAGE_TILING_OPTIMAL
+				 && (prop.optimalTilingFeatures & features) == features)
 			return format;
 	}
 
@@ -120,7 +125,8 @@ VkSurfaceFormatKHR ChooseSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& av
 {
 	for (const auto& format : availableFormats)
 	{
-		if (format.format == VK_FORMAT_B8G8R8A8_UNORM && format.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
+		if (format.format == VK_FORMAT_B8G8R8A8_UNORM
+			&& format.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
 			return format;
 	}
 
@@ -151,9 +157,10 @@ VkExtent2D ChooseExtent(const VkSurfaceCapabilitiesKHR& capabilities,
 
 		VkExtent2D extent{ static_cast<uint32_t>(width), static_cast<uint32_t>(height) };
 		// clamp the values to the allowed range
-		extent.width = std::clamp(extent.width, capabilities.minImageExtent.width, capabilities.maxImageExtent.width);
-		extent.height =
-			std::clamp(extent.height, capabilities.minImageExtent.height, capabilities.maxImageExtent.height);
+		extent.width = std::clamp(
+			extent.width, capabilities.minImageExtent.width, capabilities.maxImageExtent.width);
+		extent.height = std::clamp(
+			extent.height, capabilities.minImageExtent.height, capabilities.maxImageExtent.height);
 
 		return extent;
 	}
@@ -198,8 +205,8 @@ void CreateImage(const std::unique_ptr<Device>& device,
 	imgInfo.samples = numSamples;
 	imgInfo.flags = imageCreateFlags;
 
-	ErrCheck(
-		vkCreateImage(device->GetDevice(), &imgInfo, nullptr, &image) != VK_SUCCESS, "Failed to create image object!");
+	ErrCheck(vkCreateImage(device->GetDevice(), &imgInfo, nullptr, &image) != VK_SUCCESS,
+		"Failed to create image object!");
 
 	VkMemoryRequirements memRequirements{};
 	vkGetImageMemoryRequirements(device->GetDevice(), image, &memRequirements);
@@ -207,10 +214,11 @@ void CreateImage(const std::unique_ptr<Device>& device,
 	VkMemoryAllocateInfo memAllocInfo{};
 	memAllocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
 	memAllocInfo.allocationSize = memRequirements.size;
-	memAllocInfo.memoryTypeIndex =
-		FindMemoryType(device->GetDeviceMemoryProperties(), memRequirements.memoryTypeBits, properties);
+	memAllocInfo.memoryTypeIndex = FindMemoryType(
+		device->GetDeviceMemoryProperties(), memRequirements.memoryTypeBits, properties);
 
-	ErrCheck(vkAllocateMemory(device->GetDevice(), &memAllocInfo, nullptr, &imageMemory) != VK_SUCCESS,
+	ErrCheck(
+		vkAllocateMemory(device->GetDevice(), &memAllocInfo, nullptr, &imageMemory) != VK_SUCCESS,
 		"Failed to allocate image memory!");
 
 	vkBindImageMemory(device->GetDevice(), image, imageMemory, 0);
@@ -236,8 +244,8 @@ VkImageView CreateImageView(VkDevice deviceVk,
 	imgViewInfo.subresourceRange.layerCount = layerCount;
 
 	VkImageView imageView = nullptr;
-	ErrCheck(
-		vkCreateImageView(deviceVk, &imgViewInfo, nullptr, &imageView) != VK_SUCCESS, "Failed to create image view!");
+	ErrCheck(vkCreateImageView(deviceVk, &imgViewInfo, nullptr, &imageView) != VK_SUCCESS,
+		"Failed to create image view!");
 
 	return imageView;
 }
@@ -255,8 +263,8 @@ void CreateBuffer(const std::unique_ptr<Device>& device,
 	bufferInfo.usage = usage;
 	bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
-	ErrCheck(
-		vkCreateBuffer(device->GetDevice(), &bufferInfo, nullptr, &buffer) != VK_SUCCESS, "Failed to create buffer!");
+	ErrCheck(vkCreateBuffer(device->GetDevice(), &bufferInfo, nullptr, &buffer) != VK_SUCCESS,
+		"Failed to create buffer!");
 
 	VkMemoryRequirements memRequirements;
 	vkGetBufferMemoryRequirements(device->GetDevice(), buffer, &memRequirements);
@@ -264,10 +272,11 @@ void CreateBuffer(const std::unique_ptr<Device>& device,
 	VkMemoryAllocateInfo allocMemory{};
 	allocMemory.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
 	allocMemory.allocationSize = memRequirements.size;
-	allocMemory.memoryTypeIndex =
-		FindMemoryType(device->GetDeviceMemoryProperties(), memRequirements.memoryTypeBits, properties);
+	allocMemory.memoryTypeIndex = FindMemoryType(
+		device->GetDeviceMemoryProperties(), memRequirements.memoryTypeBits, properties);
 
-	ErrCheck(vkAllocateMemory(device->GetDevice(), &allocMemory, nullptr, &bufferMemory) != VK_SUCCESS,
+	ErrCheck(
+		vkAllocateMemory(device->GetDevice(), &allocMemory, nullptr, &bufferMemory) != VK_SUCCESS,
 		"Failed to allocate memory!");
 
 	vkBindBufferMemory(device->GetDevice(), buffer, bufferMemory, 0);
@@ -315,7 +324,8 @@ void CopyBufferToImage(const std::unique_ptr<Device>& device,
 	region.imageOffset = { 0, 0, 0 };
 	region.imageExtent = { width, height, 1 };
 
-	vkCmdCopyBufferToImage(cmdBuff, buffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
+	vkCmdCopyBufferToImage(
+		cmdBuff, buffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
 
 	EndSingleTimeCommands(cmdBuff, device->GetDevice(), commandPool, device->GetGraphicsQueue());
 }
@@ -331,7 +341,8 @@ void GenerateMipmaps(const std::unique_ptr<Device>& device,
 	VkFormatProperties formatProperties;
 	vkGetPhysicalDeviceFormatProperties(device->GetPhysicalDevice(), format, &formatProperties);
 	// check image format's support for linear filter
-	ErrCheck(!(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT),
+	ErrCheck(!(formatProperties.optimalTilingFeatures
+				 & VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT),
 		"Texture image format does not support linear blitting!");
 
 	VkCommandBuffer cmdBuff = BeginSingleTimeCommands(device->GetDevice(), commandPool);
@@ -381,7 +392,9 @@ void GenerateMipmaps(const std::unique_ptr<Device>& device,
 		blit.srcSubresource.baseArrayLayer = 0;
 		blit.srcSubresource.layerCount = 1;
 		blit.dstOffsets[0] = { 0, 0, 0 };
-		blit.dstOffsets[1] = { mipWidth > 1 ? mipWidth / 2 : 1, mipHeight > 1 ? mipHeight / 2 : 1, 1 };
+		blit.dstOffsets[1] = {
+			mipWidth > 1 ? mipWidth / 2 : 1, mipHeight > 1 ? mipHeight / 2 : 1, 1
+		};
 		blit.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 		blit.dstSubresource.mipLevel = i;
 		blit.dstSubresource.baseArrayLayer = 0;
@@ -481,7 +494,8 @@ void TransitionImageLayout(const std::unique_ptr<Device>& device,
 		srcStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
 		dstStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
 	}
-	else if (oldLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL && newLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
+	else if (oldLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL
+			 && newLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
 	{
 		barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
 		barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
@@ -521,7 +535,10 @@ VkCommandBuffer BeginSingleTimeCommands(VkDevice deviceVk, VkCommandPool command
 	return cmdBuff;
 }
 
-void EndSingleTimeCommands(VkCommandBuffer cmdBuff, VkDevice deviceVk, VkCommandPool commandPool, VkQueue graphicsQueue)
+void EndSingleTimeCommands(VkCommandBuffer cmdBuff,
+	VkDevice deviceVk,
+	VkCommandPool commandPool,
+	VkQueue graphicsQueue)
 {
 	vkEndCommandBuffer(cmdBuff);
 
@@ -559,7 +576,8 @@ void CalcTangentVectors(std::vector<Vertex>& vertices)
 	}
 }
 
-std::pair<std::vector<Vertex>, std::vector<uint32_t>> GenerateVerticesAndIndices(const std::vector<Vertex>& vertices)
+std::pair<std::vector<Vertex>, std::vector<uint32_t>> GenerateVerticesAndIndices(
+	const std::vector<Vertex>& vertices)
 {
 	// generate indices from unique vertices
 	std::unordered_map<Vertex, uint32_t> vertexLookup{};

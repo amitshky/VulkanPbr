@@ -6,7 +6,8 @@
 namespace inits {
 
 // debug messenger
-VkDebugUtilsMessengerCreateInfoEXT DebugMessengerCreateInfo(PFN_vkDebugUtilsMessengerCallbackEXT pfnDebugCallback);
+VkDebugUtilsMessengerCreateInfoEXT DebugMessengerCreateInfo(
+	PFN_vkDebugUtilsMessengerCallbackEXT pfnDebugCallback);
 
 VkResult CreateDebugUtilsMessengerEXT(VkInstance instance,
 	const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo,
@@ -60,7 +61,9 @@ VkDescriptorSetLayoutBinding DescriptorSetLayoutBinding(uint32_t binding,
 	uint32_t descriptorCount,
 	VkShaderStageFlags stageFlags);
 
-VkDescriptorBufferInfo DescriptorBufferInfo(VkBuffer buffer, VkDeviceSize offset, VkDeviceSize range);
+VkDescriptorBufferInfo DescriptorBufferInfo(VkBuffer buffer,
+	VkDeviceSize offset,
+	VkDeviceSize range);
 
 VkDescriptorImageInfo DescriptorImageInfo(VkSampler sampler, VkImageView imageView);
 
@@ -73,19 +76,24 @@ VkWriteDescriptorSet WriteDescriptorSet(VkDescriptorSet dstSet,
 
 
 // pipeline
-VkPipelineVertexInputStateCreateInfo PipelineVertexInputStateCreateInfo(uint32_t vertexBindingDescriptionCount,
+VkPipelineVertexInputStateCreateInfo PipelineVertexInputStateCreateInfo(
+	uint32_t vertexBindingDescriptionCount,
 	const VkVertexInputBindingDescription* pVertexBindingDescriptions,
 	uint32_t vertexAttributeDescriptionCount,
 	const VkVertexInputAttributeDescription* pVertexAttributeDescriptions);
 
-VkPipelineInputAssemblyStateCreateInfo PipelineInputAssemblyStateCreateInfo(VkPrimitiveTopology topology);
+VkPipelineInputAssemblyStateCreateInfo PipelineInputAssemblyStateCreateInfo(
+	VkPrimitiveTopology topology);
 
-VkPipelineViewportStateCreateInfo PipelineViewportStateCreateInfo(uint32_t viewportCount, uint32_t scissorCount);
+VkPipelineViewportStateCreateInfo PipelineViewportStateCreateInfo(uint32_t viewportCount,
+	uint32_t scissorCount);
 
-VkPipelineRasterizationStateCreateInfo PipelineRasterizationStateCreateInfo(VkCullModeFlags cullMode,
+VkPipelineRasterizationStateCreateInfo PipelineRasterizationStateCreateInfo(
+	VkCullModeFlags cullMode,
 	VkFrontFace frontFace);
 
-VkPipelineMultisampleStateCreateInfo PipelineMultisampleStateCreateInfo(VkBool32 sampleShadingEnable,
+VkPipelineMultisampleStateCreateInfo PipelineMultisampleStateCreateInfo(
+	VkBool32 sampleShadingEnable,
 	VkSampleCountFlagBits rasterizationSamples,
 	float minSampleShading);
 

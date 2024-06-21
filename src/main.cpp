@@ -5,7 +5,7 @@ int main()
 {
 	Logger::Init();
 
-	Engine* engine = Engine::Create("Vulkan PBR", 800, 800);
+	Engine* engine = Engine::Create("Vulkan PBR", 400, 400);
 	engine->Run();
 	delete engine;
 }

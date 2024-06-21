@@ -32,22 +32,23 @@ void ImGuiOverlay::Init(VkInstance vulkanInstance,
 	ImGui::StyleColorsDark();
 
 	VkDescriptorPoolSize poolSizes[] = {
-		{VK_DESCRIPTOR_TYPE_SAMPLER,                 100},
-		{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 100},
-		{ VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,          100},
-		{ VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,          100},
-		{ VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER,   100},
-		{ VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER,   100},
-		{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,         100},
-		{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,         100},
-		{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 100},
-		{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, 100},
-		{ VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT,       100},
+		{ VK_DESCRIPTOR_TYPE_SAMPLER, 100 },
+		{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 100 },
+		{ VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 100 },
+		{ VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 100 },
+		{ VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, 100 },
+		{ VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, 100 },
+		{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 100 },
+		{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 100 },
+		{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 100 },
+		{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, 100 },
+		{ VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 100 },
 	};
 
 	VkDescriptorPoolCreateInfo descriptorPoolInfo =
 		inits::DescriptorPoolCreateInfo(poolSizes, std::size(poolSizes), 100);
-	ErrCheck(vkCreateDescriptorPool(deviceVk, &descriptorPoolInfo, nullptr, &s_DescriptorPool) != VK_SUCCESS,
+	ErrCheck(vkCreateDescriptorPool(deviceVk, &descriptorPoolInfo, nullptr, &s_DescriptorPool)
+				 != VK_SUCCESS,
 		"Failed to create descriptor pool!");
 
 	ImGui_ImplGlfw_InitForVulkan(Engine::GetWindowHandle(), true);

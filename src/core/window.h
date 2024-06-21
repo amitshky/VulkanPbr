@@ -12,7 +12,9 @@ public:
 	uint64_t width;
 	uint64_t height;
 
-	explicit WindowProps(const char* title, const uint64_t width = 1280, const uint64_t height = 720)
+	explicit WindowProps(const char* title,
+		const uint64_t width = 1280,
+		const uint64_t height = 720)
 		: title{ title },
 		  width{ width },
 		  height{ height }
@@ -57,17 +59,26 @@ public:
 		return glfwGetRequiredInstanceExtensions(count);
 	}
 	inline void WaitEvents() { glfwWaitEvents(); }
-	inline void HideCursor() { glfwSetInputMode(m_WindowHandle, GLFW_CURSOR, GLFW_CURSOR_DISABLED); }
+	inline void HideCursor()
+	{
+		glfwSetInputMode(m_WindowHandle, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+	}
 	inline void ShowCursor() { glfwSetInputMode(m_WindowHandle, GLFW_CURSOR, GLFW_CURSOR_NORMAL); }
 
 	// set event callbacks
-	inline void SetCloseEventCallbackFn(const CloseEventCallbackFn& callback) { m_Data.CloseEventCallback = callback; }
+	inline void SetCloseEventCallbackFn(const CloseEventCallbackFn& callback)
+	{
+		m_Data.CloseEventCallback = callback;
+	}
 	inline void SetResizeEventCallbackFn(const ResizeEventCallbackFn& callback)
 	{
 		m_Data.ResizeEventCallback = callback;
 	}
 
-	inline void SetMouseEventCallbackFn(const MouseEventCallbackFn& callback) { m_Data.MouseEventCallback = callback; }
+	inline void SetMouseEventCallbackFn(const MouseEventCallbackFn& callback)
+	{
+		m_Data.MouseEventCallback = callback;
+	}
 	inline void SetMouseButtonCallbackFn(const MouseButtonCallbackFn& callback)
 	{
 		m_Data.MouseButtonCallback = callback;
@@ -77,7 +88,10 @@ public:
 		m_Data.MouseScrollCallback = callback;
 	}
 
-	inline void SetKeyEventCallbackFn(const KeyEventCallbackFn& callback) { m_Data.KeyEventCallback = callback; }
+	inline void SetKeyEventCallbackFn(const KeyEventCallbackFn& callback)
+	{
+		m_Data.KeyEventCallback = callback;
+	}
 
 private:
 	void Init(const WindowProps& props);

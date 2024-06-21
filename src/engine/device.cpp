@@ -44,7 +44,8 @@ void Device::PickPhysicalDevice(VkInstance vulkanInstance, VkSurfaceKHR windowSu
 			m_PhysicalDevice = phyDevice;
 			vkGetPhysicalDeviceFeatures(m_PhysicalDevice, &m_PhysicalDeviceFeatures);
 			vkGetPhysicalDeviceProperties(m_PhysicalDevice, &m_PhysicalDeviceProperties);
-			vkGetPhysicalDeviceMemoryProperties(m_PhysicalDevice, &m_PhysicalDeviceMemoryProperties);
+			vkGetPhysicalDeviceMemoryProperties(
+				m_PhysicalDevice, &m_PhysicalDeviceMemoryProperties);
 			m_MsaaSamples = GetMaxUsableSampleCount(m_PhysicalDeviceProperties);
 			break;
 		}
@@ -106,14 +107,16 @@ void Device::CreateLogicalDevice(VkSurfaceKHR windowSurface)
 		"Failed to create logcial device!");
 
 	// get the queue handle
-	vkGetDeviceQueue(m_VulkanDevice, m_QueueFamilyIndices.graphicsFamily.value(), 0, &m_GraphicsQueue);
-	vkGetDeviceQueue(m_VulkanDevice, m_QueueFamilyIndices.presentFamily.value(), 0, &m_PresentQueue);
+	vkGetDeviceQueue(
+		m_VulkanDevice, m_QueueFamilyIndices.graphicsFamily.value(), 0, &m_GraphicsQueue);
+	vkGetDeviceQueue(
+		m_VulkanDevice, m_QueueFamilyIndices.presentFamily.value(), 0, &m_PresentQueue);
 }
 
 VkSampleCountFlagBits Device::GetMaxUsableSampleCount(VkPhysicalDeviceProperties properties)
 {
-	const uint64_t counts =
-		properties.limits.framebufferColorSampleCounts & properties.limits.framebufferDepthSampleCounts;
+	const uint64_t counts = properties.limits.framebufferColorSampleCounts
+							& properties.limits.framebufferDepthSampleCounts;
 
 	if ((counts & static_cast<uint64_t>(VK_SAMPLE_COUNT_64_BIT)) != 0u)
 		return VK_SAMPLE_COUNT_64_BIT;
@@ -136,7 +139,8 @@ VkSampleCountFlagBits Device::GetMaxUsableSampleCount(VkPhysicalDeviceProperties
 	return VK_SAMPLE_COUNT_1_BIT;
 }
 
-SwapchainSupportDetails Device::QuerySwapchainSupport(VkPhysicalDevice physicalDevice, VkSurfaceKHR windowSurface)
+SwapchainSupportDetails Device::QuerySwapchainSupport(VkPhysicalDevice physicalDevice,
+	VkSurfaceKHR windowSurface)
 {
 	// Simply checking swapchain availability is not enough,
 	// we need to check if it is supported by our window surface or not
@@ -147,7 +151,8 @@ SwapchainSupportDetails Device::QuerySwapchainSupport(VkPhysicalDevice physicalD
 	SwapchainSupportDetails swapchainDetails{};
 
 	// query surface capabilities
-	vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, windowSurface, &swapchainDetails.capabilities);
+	vkGetPhysicalDeviceSurfaceCapabilitiesKHR(
+		physicalDevice, windowSurface, &swapchainDetails.capabilities);
 
 	// query surface format
 	uint32_t formatCount = 0;
@@ -161,7 +166,8 @@ SwapchainSupportDetails Device::QuerySwapchainSupport(VkPhysicalDevice physicalD
 
 	// query supported presentation modes
 	uint32_t presentModeCount = 0;
-	vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, windowSurface, &presentModeCount, nullptr);
+	vkGetPhysicalDeviceSurfacePresentModesKHR(
+		physicalDevice, windowSurface, &presentModeCount, nullptr);
 	if (presentModeCount != 0)
 	{
 		swapchainDetails.presentModes.resize(presentModeCount);
@@ -183,8 +189,10 @@ bool Device::IsDeviceSuitable(VkPhysicalDevice physicalDevice, VkSurfaceKHR wind
 	bool swapchainAdequate = false;
 	if (extensionsSupported)
 	{
-		SwapchainSupportDetails swapchainSupport = QuerySwapchainSupport(physicalDevice, windowSurface);
-		swapchainAdequate = !swapchainSupport.formats.empty() && !swapchainSupport.presentModes.empty();
+		SwapchainSupportDetails swapchainSupport =
+			QuerySwapchainSupport(physicalDevice, windowSurface);
+		swapchainAdequate =
+			!swapchainSupport.formats.empty() && !swapchainSupport.presentModes.empty();
 	}
 
 	VkPhysicalDeviceFeatures supportedFeatures;
@@ -194,7 +202,8 @@ bool Device::IsDeviceSuitable(VkPhysicalDevice physicalDevice, VkSurfaceKHR wind
 		   && (supportedFeatures.samplerAnisotropy != 0u);
 }
 
-QueueFamilyIndices Device::FindQueueFamilies(VkPhysicalDevice physicalDevice, VkSurfaceKHR windowSurface)
+QueueFamilyIndices Device::FindQueueFamilies(VkPhysicalDevice physicalDevice,
+	VkSurfaceKHR windowSurface)
 {
 	QueueFamilyIndices indices;
 
@@ -202,7 +211,8 @@ QueueFamilyIndices Device::FindQueueFamilies(VkPhysicalDevice physicalDevice, Vk
 	vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyCount, nullptr);
 
 	std::vector<VkQueueFamilyProperties> queueFamilies{ queueFamilyCount };
-	vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyCount, queueFamilies.data());
+	vkGetPhysicalDeviceQueueFamilyProperties(
+		physicalDevice, &queueFamilyCount, queueFamilies.data());
 
 	// find a queue that supports graphics commands
 	for (int i = 0; i < queueFamilies.size(); ++i)

@@ -83,13 +83,16 @@ void Model::ProcessMesh(aiMesh* mesh, const aiScene* scene)
 		vertex.pos = position;
 
 		if (mesh->HasNormals())
-			vertex.normal = glm::vec3{ mesh->mNormals[i].x, mesh->mNormals[i].y, mesh->mNormals[i].z };
+			vertex.normal =
+				glm::vec3{ mesh->mNormals[i].x, mesh->mNormals[i].y, mesh->mNormals[i].z };
 
 		if (mesh->mTextureCoords[0]) // check if the mesh has texture coords
-			vertex.texCoord = glm::vec2{ mesh->mTextureCoords[0][i].x, mesh->mTextureCoords[0][i].y };
+			vertex.texCoord =
+				glm::vec2{ mesh->mTextureCoords[0][i].x, mesh->mTextureCoords[0][i].y };
 
 		if (mesh->HasTangentsAndBitangents())
-			vertex.tangent = glm::vec3{ mesh->mTangents[i].x, mesh->mTangents[i].y, mesh->mTangents[i].z };
+			vertex.tangent =
+				glm::vec3{ mesh->mTangents[i].x, mesh->mTangents[i].y, mesh->mTangents[i].z };
 
 		vertices.push_back(vertex);
 	}

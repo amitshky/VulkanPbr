@@ -23,7 +23,10 @@ struct QueueFamilyIndices
 	std::optional<uint32_t> graphicsFamily;
 	std::optional<uint32_t> presentFamily;
 
-	[[nodiscard]] inline bool IsComplete() const { return graphicsFamily.has_value() && presentFamily.has_value(); }
+	[[nodiscard]] inline bool IsComplete() const
+	{
+		return graphicsFamily.has_value() && presentFamily.has_value();
+	}
 };
 
 struct SwapchainSupportDetails
@@ -91,7 +94,8 @@ struct Vertex
 	// hash function
 	bool operator==(const Vertex& other) const
 	{
-		return pos == other.pos && normal == other.normal && texCoord == other.texCoord && tangent == other.tangent;
+		return pos == other.pos && normal == other.normal && texCoord == other.texCoord
+			   && tangent == other.tangent;
 	}
 };
 
@@ -103,7 +107,8 @@ struct hash<Vertex>
 	size_t operator()(Vertex const& vertex) const
 	{
 		return ((hash<glm::vec3>()(vertex.pos) ^ (hash<glm::vec3>()(vertex.normal) << 1)) >> 1)
-			   ^ (hash<glm::vec2>()(vertex.texCoord) << 1) ^ (hash<glm::vec3>()(vertex.tangent) << 1);
+			   ^ (hash<glm::vec2>()(vertex.texCoord) << 1)
+			   ^ (hash<glm::vec3>()(vertex.tangent) << 1);
 	}
 };
 } // namespace std
@@ -111,7 +116,8 @@ struct hash<Vertex>
 struct SceneUBO
 {
 	alignas(16) glm::vec3 cameraPos;
-	alignas(16) glm::vec4 lightPos[4]; // vec4 for alignment; the shader uses only the first 3 components
+	alignas(16)
+		glm::vec4 lightPos[4]; // vec4 for alignment; the shader uses only the first 3 components
 	alignas(16) glm::vec3 lightColors;
 
 	[[nodiscard]] static inline uint64_t GetSize() { return sizeof(SceneUBO); }

@@ -26,6 +26,19 @@
 			"environment": [],
 			"console": "newExternalWindow"
 		},
+		// Clang linux
+		{
+			"name": "(Linux::Clang) Debug",
+			"type": "cppdbg",
+			"request": "launch",
+			"preLaunchTask": "Build-Clang-Debug",
+			"program": "${workspaceFolder}/build/src/vulkanPbr",
+			"args": [],
+			"stopAtEntry": false,
+			"cwd": "${workspaceFolder}",
+			"environment": [],
+			"console": "newExternalWindow"
+		},
 		// MSVC
 		{
 			"name": "(Win::MSVC) Debug",

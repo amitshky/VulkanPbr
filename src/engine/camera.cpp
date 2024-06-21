@@ -123,8 +123,8 @@ void Camera::OnMouseMove(double xpos, double ypos)
 		m_Yaw = 0.0f;
 
 	glm::vec3 direction;
-	direction.x = std::cosf(glm::radians(m_Yaw)) * std::cosf(glm::radians(m_Pitch));
-	direction.y = std::sinf(glm::radians(m_Pitch));
-	direction.z = std::sinf(glm::radians(m_Yaw)) * std::cosf(glm::radians(m_Pitch));
+	direction.x = cosf(glm::radians(m_Yaw)) * cosf(glm::radians(m_Pitch));
+	direction.y = sinf(glm::radians(m_Pitch));
+	direction.z = sinf(glm::radians(m_Yaw)) * cosf(glm::radians(m_Pitch));
 	m_CameraFront = glm::normalize(direction);
 }

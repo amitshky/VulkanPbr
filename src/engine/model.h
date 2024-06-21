@@ -16,18 +16,28 @@ public:
 	void Draw(VkCommandBuffer activeCommandBuffer);
 	void Cleanup(VkDevice deviceVk);
 
-	// [[nodiscard]] inline std::pair<std::vector<Vertex>, std::vector<uint32_t>> GetModelData() const
+	// [[nodiscard]] inline std::pair<std::vector<Vertex>, std::vector<uint32_t>> GetModelData()
+	// const
 	// {
 	// 	return { m_Vertices, m_Indices };
 	// }
 
 	[[nodiscard]] inline std::vector<VkBuffer> GetVertexBuffers() const { return m_VertexBuffers; }
-	[[nodiscard]] inline std::vector<VkDeviceMemory> GetVertexBufferMemories() const { return m_VertexBufferMems; }
+	[[nodiscard]] inline std::vector<VkDeviceMemory> GetVertexBufferMemories() const
+	{
+		return m_VertexBufferMems;
+	}
 
 	[[nodiscard]] inline std::vector<VkBuffer> GetIndexBuffers() const { return m_IndexBuffers; }
-	[[nodiscard]] inline std::vector<VkDeviceMemory> GetIndexBufferMemories() const { return m_IndexBufferMems; }
+	[[nodiscard]] inline std::vector<VkDeviceMemory> GetIndexBufferMemories() const
+	{
+		return m_IndexBufferMems;
+	}
 
-	[[nodiscard]] inline std::vector<std::string> GetTexturePaths() const { return m_LoadedTextures; }
+	[[nodiscard]] inline std::vector<std::string> GetTexturePaths() const
+	{
+		return m_LoadedTextures;
+	}
 
 
 private:

@@ -17,12 +17,21 @@ public:
 	[[nodiscard]] inline VkPhysicalDevice GetPhysicalDevice() const { return m_PhysicalDevice; }
 	[[nodiscard]] inline VkDevice GetDevice() const { return m_VulkanDevice; }
 
-	[[nodiscard]] inline QueueFamilyIndices GetQueueFamilyIndices() const { return m_QueueFamilyIndices; }
+	[[nodiscard]] inline QueueFamilyIndices GetQueueFamilyIndices() const
+	{
+		return m_QueueFamilyIndices;
+	}
 	[[nodiscard]] inline VkQueue GetGraphicsQueue() const { return m_GraphicsQueue; }
 	[[nodiscard]] inline VkQueue GetPresentQueue() const { return m_PresentQueue; }
 
-	[[nodiscard]] inline VkPhysicalDeviceFeatures GetDeviceFeatures() const { return m_PhysicalDeviceFeatures; }
-	[[nodiscard]] inline VkPhysicalDeviceProperties GetDeviceProperties() const { return m_PhysicalDeviceProperties; }
+	[[nodiscard]] inline VkPhysicalDeviceFeatures GetDeviceFeatures() const
+	{
+		return m_PhysicalDeviceFeatures;
+	}
+	[[nodiscard]] inline VkPhysicalDeviceProperties GetDeviceProperties() const
+	{
+		return m_PhysicalDeviceProperties;
+	}
 	[[nodiscard]] inline VkPhysicalDeviceMemoryProperties GetDeviceMemoryProperties() const
 	{
 		return m_PhysicalDeviceMemoryProperties;
@@ -30,14 +39,16 @@ public:
 
 	[[nodiscard]] inline VkSampleCountFlagBits GetMsaaSamples() const { return m_MsaaSamples; }
 
-	static SwapchainSupportDetails QuerySwapchainSupport(VkPhysicalDevice physicalDevice, VkSurfaceKHR windowSurface);
+	static SwapchainSupportDetails QuerySwapchainSupport(VkPhysicalDevice physicalDevice,
+		VkSurfaceKHR windowSurface);
 
 private:
 	void Init(VkInstance vulkanInstance, VkSurfaceKHR windowSurface);
 	void Cleanup();
 
 	static bool IsDeviceSuitable(VkPhysicalDevice physicalDevice, VkSurfaceKHR windowSurface);
-	static QueueFamilyIndices FindQueueFamilies(VkPhysicalDevice physicalDevice, VkSurfaceKHR windowSurface);
+	static QueueFamilyIndices FindQueueFamilies(VkPhysicalDevice physicalDevice,
+		VkSurfaceKHR windowSurface);
 	static VkSampleCountFlagBits GetMaxUsableSampleCount(VkPhysicalDeviceProperties properties);
 
 	void PickPhysicalDevice(VkInstance vulkanInstance, VkSurfaceKHR windowSurface);
